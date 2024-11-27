@@ -5,7 +5,9 @@ const config = require("./utils/config")
 const logger = require("./utils/logger")
 const middleware = require("./utils/middleware")
 const mongoose = require("mongoose")
-const user = require("./models/user")
+const cookieParser = require("cookie-parser");
+const userRouter = require("./controllers/user");
+const loginRouter = require("./controllers/login")
 
 //mongoose connection
 mongoose.set("strictQuery",false);
@@ -17,8 +19,10 @@ mongoose.connect(config.MONGODB_URL).then((result)=>{
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser()); 
 
-
+app.use("/api/users", userRouter);
+app.use("/api/login", loginRouter);
 
 
 
