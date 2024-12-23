@@ -8,6 +8,7 @@ const mongoose = require("mongoose")
 const cookieParser = require("cookie-parser");
 const userRouter = require("./controllers/user");
 const loginRouter = require("./controllers/login")
+const animalRouter = require("./controllers/animalPost")
 
 //mongoose connection
 mongoose.set("strictQuery",false);
@@ -17,12 +18,16 @@ mongoose.connect(config.MONGODB_URL).then((result)=>{
     logger.error(err.message)
 })
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // React app origin
+    credentials: true, // Allow credentials (cookies)
+}));
 app.use(express.json());
 app.use(cookieParser()); 
 
 app.use("/api/users", userRouter);
 app.use("/api/login", loginRouter);
+app.use("/api/animals", animalRouter);
 
 
 

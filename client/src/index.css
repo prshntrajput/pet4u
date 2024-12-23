@@ -28,3 +28,11 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+
+*{
+  font-family: "Mulish", serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+}

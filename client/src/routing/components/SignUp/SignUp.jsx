@@ -1,14 +1,34 @@
 import React, { useState } from 'react';
 import { PawPrint, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import axios from 'axios';
 
 export function SignupForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole]=useState('user');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle signup logic here
+
+    try {
+      const response = await axios.post(
+        'http://localhost:3001/api/users',
+        { name, email, password, role },
+        { withCredentials: true } // Ensures cookies (like authToken) are handled
+      );
+
+      setSuccess('Account created successfully!');
+      setError('');
+      
+      // Optionally redirect or perform another action
+      console.log('User data:', response.data);
+    } catch (err) {
+      setSuccess('');
+      setError(err.response?.data || 'Something went wrong. Please try again.');
+    }
   };
 
   return (
@@ -23,6 +43,8 @@ export function SignupForm() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          {success && <p className="text-sm text-green-500">{success}</p>}
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -85,6 +107,19 @@ export function SignupForm() {
                   placeholder="Create a password"
                 />
               </div>
+                     {/** role selection */}
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">Select Role:</label>
+           <select
+             id="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+               >
+              
+          <option value="user"  className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500">User</option>
+          <option value="seller"  className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500">Seller</option>
+                 
+        </select>
+
               <p className="mt-2 text-sm text-gray-500">
                 Must be at least 8 characters long
               </p>

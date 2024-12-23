@@ -1,13 +1,32 @@
 import React, { useState } from 'react';
 import { PawPrint, Mail, Lock, ArrowRight } from 'lucide-react';
+import axios from 'axios';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Handle login logic here
+   try {
+          const response = await axios.post("http://localhost:3001/api/login",{ email, password});
+
+          const {data} = response;
+          console.log(data)
+          localStorage.setItem("authToken",data.token)
+
+           if (data.role === "admin") {
+            window.location.href = "/admin-dashboard"; // Example route
+           } else {
+            window.location.href = "/"; // Example route
+              }
+
+   } catch (error) {
+      const errorMessage =
+      error.response?.data || "Something went wrong. Please try again.";
+      alert(errorMessage); 
+  }
   };
 
   return (
