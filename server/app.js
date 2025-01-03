@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const userRouter = require("./controllers/user");
 const loginRouter = require("./controllers/login")
 const animalRouter = require("./controllers/animalPost")
+const adoptionRouter = require("./controllers/adoption")
 
 //mongoose connection
 mongoose.set("strictQuery",false);
@@ -28,6 +29,7 @@ app.use(cookieParser());
 app.use("/api/users", userRouter);
 app.use("/api/login", loginRouter);
 app.use("/api/animals", animalRouter);
+app.use("/api/adoption", adoptionRouter);
 
 
 

@@ -1,3 +1,5 @@
+const mongoose = require("mongoose")
+
 const adoptionRequestSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   animal: { type: mongoose.Schema.Types.ObjectId, ref: 'Animal', required: true },

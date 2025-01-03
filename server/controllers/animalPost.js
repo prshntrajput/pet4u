@@ -2,6 +2,7 @@ const animalRouter = require("express").Router();
 const Animal = require("../models/animalSchema");
 const Joi = require("joi");
 const auth = require("../middleware/authMiddleware")
+const role = require("../middleware/roleMiddleware")
 
 
 
@@ -41,7 +42,7 @@ animalRouter.get("/my-animals", auth(), async (req, res) => {
 });
 
 // animal post request
-animalRouter.post("/", auth(), async (req,res)=>{
+animalRouter.post("/", auth(), role("seller"), async (req,res)=>{
   
     // validate schema
     const { error }= animalSchema.validate(req.body);
