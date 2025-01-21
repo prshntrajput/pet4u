@@ -32,7 +32,7 @@ export function LoginForm() {
     e.preventDefault();
     // Handle login logic here
    try {
-          const response = await axios.post("http://localhost:3001/api/login",{ email, password});
+          const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/api/login`,{ email, password});
 
           const {data} = response;
           console.log(data)

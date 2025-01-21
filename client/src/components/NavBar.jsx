@@ -43,9 +43,9 @@ export function Navbar() {
               <a href="#" className="text-gray-600 hover:px-2 py-2 hover:text-pink-500 font-bold transition">Browse Pets</a>
               <a href="#" className="text-gray-600 hover:px-2 py-2 hover:text-pink-500 font-bold transition">How It Works</a>
               <a href="#" className="text-gray-600 hover:px-2 py-2 hover:text-pink-500 font-bold transition">About Us</a>
-              <button className="bg-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition">
+             <Link to={"/login"}> <button className="bg-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition">
                 Sign In
-              </button>
+              </button></Link>
             </div>
           </div>
         )}

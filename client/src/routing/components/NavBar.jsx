@@ -9,7 +9,7 @@ export function Navbar() {
    const handleLogout = () => {
     // Implement logout logic here
     localStorage.removeItem("authToken");
-    navigate("/login");
+    navigate("/");
   }
 
   return (

@@ -19,7 +19,7 @@ export function SignupForm() {
 
     try {
       const response = await axios.post(
-        'http://localhost:3001/api/users',
+        `${import.meta.env.VITE_BACKEND_API}/api/users`,
         { name, email, password, role },
         { withCredentials: true } // Ensures cookies (like authToken) are handled
       );
