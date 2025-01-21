@@ -21,19 +21,9 @@ export const animals = [
     traits: ['Playful', 'Indoor'],
     featured: false
   },
+  
   {
     id: 3,
-    name: 'Max',
-    type: 'Dog',
-    breed: 'Beagle',
-    age: '3 years',
-    matchScore: 92,
-    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=500',
-    traits: ['Energetic', 'Trained'],
-    featured: true
-  },
-  {
-    id: 4,
     name: 'Bella',
     type: 'Cat',
     breed: 'Siamese',
@@ -44,7 +34,7 @@ export const animals = [
     featured: false
   },
   {
-    id: 5,
+    id: 4,
     name: 'Rocky',
     type: 'Dog',
     breed: 'German Shepherd',
@@ -55,7 +45,7 @@ export const animals = [
     featured: true
   },
   {
-    id: 6,
+    id: 5,
     name: 'Milo',
     type: 'Cat',
     breed: 'Maine Coon',

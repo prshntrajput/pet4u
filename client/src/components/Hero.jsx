@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, Sparkles, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export function Hero() {
   return (
@@ -28,7 +29,7 @@ export function Hero() {
           </h1>
           
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Our AI technology matches you with pets that perfectly fit your lifestyle. Experience the future of pet adoption today.
+            Explore a wide range of adorable pets waiting for a loving home. Start your journey to find the perfect companion today.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -37,9 +38,9 @@ export function Hero() {
               Adopt
               <ArrowRight className="h-5 w-5" />
             </button>
-            <button className="bg-white text-pink-500 px-8 py-4 rounded-full font-semibold border-2 border-pink-500 hover:bg-pink-50 transition">
+           <Link to={"/home"}> <button className="bg-white text-pink-500 px-8 py-4 rounded-full font-semibold border-2 border-pink-500 hover:bg-pink-50 transition">
               Browse All Pets
-            </button>
+            </button> </Link>
           </div>
         </div>
       </div>

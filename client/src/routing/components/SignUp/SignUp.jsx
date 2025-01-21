@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { PawPrint, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { setSignupData } from '../../../store/reducers/User/Signup';
+import { registerUser } from '../../../store/actions/User/signupAction';
 
 export function SignupForm() {
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +34,20 @@ export function SignupForm() {
       setError(err.response?.data || 'Something went wrong. Please try again.');
     }
   };
+
+{/** const dispatch= useDispatch();
+
+ const { signupData, error , message , loading}= useSelector((state)=>state.SignupUserReducer);
+
+ const handleChange = (e) => {
+    dispatch(setSignupData({ name: e.target.name, value: e.target.value }));
+  };
+
+    const handleSubmit = (e) => {
+    e.preventDefault();
+      dispatch(registerUser(signupData));
+    
+  }; ***/}
 
   return (
     <div className="min-h-screen flex items-center justify-center py-10 pb-10 bg-gradient-to-b from-pink-600 via-red-200 to-white px-4">
@@ -60,7 +78,7 @@ export function SignupForm() {
                   type="text"
                   required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e)=>setName(e.target.value)}
                   className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Enter your full name"
                 />
@@ -81,7 +99,7 @@ export function SignupForm() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e)=>setEmail(e.target.value)}
                   className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Enter your email"
                 />
@@ -102,7 +120,7 @@ export function SignupForm() {
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e)=>setPassword(e.target.value)}
                   className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Create a password"
                 />
@@ -112,11 +130,11 @@ export function SignupForm() {
            <select
              id="role"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e)=>setRole(e.target.value)}
                >
               
           <option value="user"  className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500">User</option>
-          <option value="seller"  className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500">Seller</option>
+         {/**  <option value="seller"  className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500">Seller</option>**/}
                  
         </select>
 

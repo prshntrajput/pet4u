@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { PawPrint, Menu, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {  useNavigate } from 'react-router-dom';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+   const handleLogout = () => {
+    // Implement logout logic here
+    localStorage.removeItem("authToken");
+    navigate("/login");
+  }
 
   return (
     <nav className="bg-white/80 backdrop-blur-md fixed w-full z-10 border-b border-gray-200 shadow-md">
@@ -19,12 +26,12 @@ export function Navbar() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             <a href="/" className="text-gray-600 hover:text-pink-500 font-bold transition">Home</a>
-            <a href="/home" className="text-gray-600 hover:text-pink-500 font-bold transition">Browse Pets</a>
+            <a href="home" className="text-gray-600 hover:text-pink-500 font-bold transition">Browse Pets</a>
             <a href="#" className="text-gray-600 hover:text-pink-500 font-bold transition">How It Works</a>
             <a href="#" className="text-gray-600 hover:text-pink-500 font-bold transition">About Us</a>
-           <Link to={"/login"}> <button className="bg-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition">
-              Sign In
-            </button></Link>
+            <button onClick={handleLogout} className="bg-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition">
+              Logout
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -43,8 +50,8 @@ export function Navbar() {
               <a href="#" className="text-gray-600 hover:px-2 py-2 hover:text-pink-500 font-bold transition">Browse Pets</a>
               <a href="#" className="text-gray-600 hover:px-2 py-2 hover:text-pink-500 font-bold transition">How It Works</a>
               <a href="#" className="text-gray-600 hover:px-2 py-2 hover:text-pink-500 font-bold transition">About Us</a>
-              <button className="bg-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition">
-                Sign In
+              <button onClick={handleLogout} className="bg-pink-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-pink-600 transition">
+                Logout
               </button>
             </div>
           </div>

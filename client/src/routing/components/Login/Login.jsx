@@ -1,10 +1,32 @@
 import React, { useState } from 'react';
 import { PawPrint, Mail, Lock, ArrowRight } from 'lucide-react';
+import { setLoginUser } from '../../../store/reducers/User/Login';
+import {loginUser} from "../../../store/actions/User/loginAction";
+import {useDispatch , useSelector} from "react-redux";
 import axios from 'axios';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+
+  
+
+  {/**const { error, loading, message}=useSelector((state)=>state.loginUserReducer);
+
+   const dispatch = useDispatch();**/}
+
+  {/**const handleChange =(e)=>{
+    dispatch(setLoginUser({ name: e.target.name, value: e.target.value }))
+    console.log({name: e.target.name, value: e.target.value})
+  }***/}
+
+
+  {/***const handleSubmit=(e)=>{
+    e.preventDefault();
+    dispatch(loginUser(email,password))
+    console.log(loginData)
+  }**/}
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +41,7 @@ export function LoginForm() {
            if (data.role === "admin") {
             window.location.href = "/admin-dashboard"; // Example route
            } else {
-            window.location.href = "/"; // Example route
+            window.location.href = "/home"; // Example route
               }
 
    } catch (error) {
@@ -27,7 +49,7 @@ export function LoginForm() {
       error.response?.data || "Something went wrong. Please try again.";
       alert(errorMessage); 
   }
-  };
+  }; 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-pink-600 via-red-200 to-white px-4">
@@ -56,7 +78,7 @@ export function LoginForm() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e)=>setEmail(e.target.value)}
                   className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Enter your email"
                 />
@@ -77,7 +99,7 @@ export function LoginForm() {
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e)=>setPassword(e.target.value)}
                   className="appearance-none block w-full pl-11 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Enter your password"
                 />

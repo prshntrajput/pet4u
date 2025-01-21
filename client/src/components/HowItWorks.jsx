@@ -1,25 +1,25 @@
 import React from 'react';
-import { Search, Heart, Home, Sparkles } from 'lucide-react';
+import { Search, Heart, Home } from 'lucide-react';
 
 const steps = [
   {
     icon: Search,
-    title: 'AI Analysis',
-    description: 'Our AI analyzes your lifestyle, preferences, and living situation.',
-  },
-  {
-    icon: Sparkles,
-    title: 'Smart Matching',
-    description: 'Get personalized pet recommendations based on compatibility scores.',
+    title: 'Find a Pet',
+    description: 'Browse through our wide selection of pets available for adoption.',
   },
   {
     icon: Heart,
-    title: 'Meet & Connect',
-    description: 'Schedule a meeting with your potential new family member.',
+    title: 'Express Interest',
+    description: 'Let us know which pet you are interested in and connect with the pet owner.',
   },
   {
     icon: Home,
-    title: 'Welcome Home',
+    title: 'Meet Your Match',
+    description: 'Schedule a meeting to get to know your potential new furry friend.',
+  },
+  {
+    icon: Home,
+    title: 'Adopt and Welcome Home',
     description: 'Complete the adoption process and give your new friend a loving home.',
   },
 ];
@@ -31,7 +31,7 @@ export function HowItWorks() {
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold mb-4">How Pet4U Works</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Our AI-powered platform makes finding your perfect pet companion easier than ever.
+            Discover how easy it is to adopt a pet and bring joy to your life.
           </p>
         </div>
         
