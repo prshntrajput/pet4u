@@ -20,7 +20,7 @@ mongoose.connect(config.MONGODB_URL).then((result)=>{
 })
 
 app.use(cors({
-    origin: 'http://localhost:5173', // React app origin
+    origin: 'https://petforuu.netlify.app/', // React app origin
     credentials: true, // Allow credentials (cookies)
 }));
 app.use(express.json());
