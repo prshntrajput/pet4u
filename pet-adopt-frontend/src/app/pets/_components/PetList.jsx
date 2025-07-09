@@ -14,7 +14,7 @@ export default function PetsPage() {
   useEffect(() => {
     const fetchPets = async () => {
       try {
-        const res = await axios.get("http://localhost:8002/api/pets")
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}api/pets`)
         setPets(res.data)
       } catch (error) {
         console.error("Error fetching pets:", error)
@@ -30,7 +30,7 @@ export default function PetsPage() {
 
   const handleAdopt = async (petId) => {
     try {
-      const res = await axios.post(`http://localhost:8002/api/adopt`, { petId }, { withCredentials: true })
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}api/adopt`, { petId }, { withCredentials: true })
       alert("Adoption request sent!")
       queryClient.invalidateQueries(["adopt-status", petId])
     } catch (err) {
