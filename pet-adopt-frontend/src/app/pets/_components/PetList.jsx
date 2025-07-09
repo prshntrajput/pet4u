@@ -93,7 +93,7 @@ function PetCard({ pet, session, handleAdopt }) {
   const { data: adoptStatus } = useQuery({
     queryKey: ["adopt-status", pet._id],
     queryFn: async () => {
-      const res = await axios.get(`http://localhost:8002/api/adopt/status/${pet._id}`, {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}api/adopt/status/${pet._id}`, {
         withCredentials: true,
       })
       return res.data

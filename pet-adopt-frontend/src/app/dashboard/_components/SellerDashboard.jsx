@@ -17,7 +17,7 @@ export default function SellerDashboard() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await axios.post("http://localhost:8002/api/pets", form, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/pets`, form, {
         withCredentials: true,
       })
       return res.data

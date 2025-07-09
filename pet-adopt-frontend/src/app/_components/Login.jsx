@@ -11,7 +11,7 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await axios.post("http://localhost:8002/api/auth/login", form, {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}api/auth/login`, form, {
         withCredentials: true,
       })
       return res.data

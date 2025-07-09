@@ -9,7 +9,7 @@ import Link from "next/link"
 import ProtectedRoute from "@/app/_components/ProtectedRoutes"
 
 // ✅ Socket client instance
-const socket = io("http://localhost:8002", {
+const socket = io(process.env.NEXT_PUBLIC_API_URL, {
   withCredentials: true,
 })
 
@@ -34,7 +34,7 @@ export default function ChatPage() {
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["messages", currentUserId, otherUserId],
     queryFn: async () => {
-      const res = await axios.get(`http://localhost:8002/api/messages/${currentUserId}/${otherUserId}`, {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}api/messages/${currentUserId}/${otherUserId}`, {
         withCredentials: true,
       })
       return res.data.messages

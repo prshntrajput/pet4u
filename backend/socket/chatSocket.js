@@ -7,7 +7,7 @@ const onlineUsers = {}; // userId -> socketId
 module.exports = function (server) {
   const io = require("socket.io")(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: "https://pet4u-zeta.vercel.app",
       credentials: true,
     },
   });

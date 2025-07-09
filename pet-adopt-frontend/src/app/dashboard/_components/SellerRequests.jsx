@@ -23,7 +23,7 @@ export default function SellerRequestDashboard() {
   } = useQuery({
     queryKey: ["adoption-requests"],
     queryFn: async () => {
-      const res = await axios.get("http://localhost:8002/api/adopt/requests", {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}api/adopt/requests`, {
         withCredentials: true,
       })
       return res.data
@@ -34,7 +34,7 @@ export default function SellerRequestDashboard() {
   // ✅ Accept request mutation
   const acceptMutation = useMutation({
     mutationFn: async (reqId) => {
-      return axios.put(`http://localhost:8002/api/adopt/accept/${reqId}`, {}, { withCredentials: true })
+      return axios.put(`${process.env.NEXT_PUBLIC_API_URL}api/adopt/accept/${reqId}`, {}, { withCredentials: true })
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["adoption-requests"])
@@ -44,7 +44,7 @@ export default function SellerRequestDashboard() {
   // ✅ Reject request mutation
   const rejectMutation = useMutation({
     mutationFn: async (reqId) => {
-      return axios.put(`http://localhost:8002/api/adopt/reject/${reqId}`, {}, { withCredentials: true })
+      return axios.put(`${process.env.NEXT_PUBLIC_API_URL}api/adopt/reject/${reqId}`, {}, { withCredentials: true })
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["adoption-requests"])
