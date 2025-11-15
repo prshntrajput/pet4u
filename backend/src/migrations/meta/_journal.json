@@ -15,6 +15,13 @@
       "when": 1762627306146,
       "tag": "0001_ambitious_kabuki",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763230098676,
+      "tag": "0002_sharp_molten_man",
+      "breakpoints": true
     }
   ]
 }

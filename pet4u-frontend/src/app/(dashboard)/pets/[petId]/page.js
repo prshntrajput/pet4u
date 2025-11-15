@@ -34,6 +34,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import PetReviewsSection from '@/app/_component/pets/PetReviewsSection';
 
 export default function PetDetailPage() {
   const params = useParams();
@@ -521,6 +522,12 @@ export default function PetDetailPage() {
           </div>
         </div>
       </div>
+      <div className="mt-12">
+         <PetReviewsSection 
+          petId={pet.id} 
+          canReview={user?.role === 'adopter' && pet.ownerId !== user?.userId}
+         />
+         </div>
 
       {/* Adoption Request Dialog */}
       <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>

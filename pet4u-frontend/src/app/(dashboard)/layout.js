@@ -6,7 +6,19 @@ import { useRouter } from 'next/navigation';
 import { logoutUser } from '@/lib/store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import NotificationDropdown from '../_component/notifications/NotificationDropDown';
-import { LogOut, Home, Heart, Settings, PawPrint, List, Plus, MessageSquare, Inbox, FileText } from 'lucide-react';
+import { 
+  LogOut, 
+  Home, 
+  Heart, 
+  Settings, 
+  PawPrint, 
+  List, 
+  Plus, 
+  MessageSquare, 
+  Inbox, 
+  FileText,
+  Shield // ✅ Added Shield icon
+} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -96,6 +108,14 @@ export default function DashboardLayout({ children }) {
                 )}
               </Link>
               
+              {/* ✅ Admin Menu - Only visible for admin users */}
+              {user?.role === 'admin' && (
+                <Link href="/admin" className="text-gray-700 hover:text-blue-600 flex items-center space-x-1">
+                  <Shield size={18} />
+                  <span>Admin</span>
+                </Link>
+              )}
+              
               <Link href="/settings" className="text-gray-700 hover:text-blue-600 flex items-center space-x-1">
                 <Settings size={18} />
                 <span>Settings</span>
@@ -128,7 +148,6 @@ export default function DashboardLayout({ children }) {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {children}
-        
       </main>
 
       {/* Footer */}

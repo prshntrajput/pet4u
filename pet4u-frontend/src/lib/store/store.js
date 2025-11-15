@@ -20,6 +20,7 @@ import favoriteSlice from './slices/favoriteSlice';
 import messagesSlice from './slices/messagesSlice';
 import adoptionSlice from './slices/adoptionSlice';
 import notificationSlice from './slices/notificationSlice';
+import reviewSlice from "./slices/reviewSlice"
 
 // Persist configuration
 const persistConfig = {
@@ -27,7 +28,7 @@ const persistConfig = {
   version: 1,
   storage,
   whitelist: ['auth', 'user'], // Only persist auth and user
-  blacklist: ['pets', 'messages', 'notifications'], // ✅ Don't persist real-time data
+  blacklist: ['pets', 'messages', 'notifications', 'reviews'], // ✅ Don't persist real-time data
 };
 
 // Root reducer
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
   adoption: adoptionSlice,
   messages: messagesSlice,
   notifications: notificationSlice,
+  reviews: reviewSlice
 });
 
 // Persisted reducer

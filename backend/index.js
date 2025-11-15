@@ -142,6 +142,8 @@ const setupRoutes = () => {
   const messageRoutes = require('./src/routes/messages');
   const notificationRoutes = require('./src/routes/notifications');
   const favoriteRoutes = require('./src/routes/favorites');
+  const reviewRoutes = require('./src/routes/reviews');
+  const adminRoutes = require('./src/routes/admin');
   
   // Register routes
   app.use(`${apiV1}/auth`, authRoutes);
@@ -152,6 +154,8 @@ const setupRoutes = () => {
   app.use(`${apiV1}/messages`, messageRoutes);
   app.use(`${apiV1}/notifications`, notificationRoutes);
   app.use(`${apiV1}/favorites`, favoriteRoutes);
+  app.use(`${apiV1}/reviews`, reviewRoutes);
+  app.use(`${apiV1}/admin`, adminRoutes);
   
   logger.info('API routes configured');
 };
