@@ -44,7 +44,7 @@ export default function LoginForm() {
       });
       
       if (result.user.role === 'shelter') {
-        router.push('/dashboard/shelter');
+        router.push('/dashboard');
       } else {
         router.push('/dashboard');
       }
