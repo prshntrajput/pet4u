@@ -2,15 +2,38 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { logger } = require('../config/logger');
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// ✅ Only initialize if credentials exist
+let razorpay = null;
+
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  try {
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+    logger.info('✅ Razorpay initialized successfully');
+  } catch (error) {
+    logger.error('❌ Failed to initialize Razorpay:', error);
+  }
+} else {
+  logger.warn('⚠️  Razorpay credentials not configured - payment features disabled');
+}
 
 const paymentService = {
+  // ✅ Check if Razorpay is available
+  isAvailable: () => razorpay !== null,
+
   // Create Razorpay order
   createOrder: async ({ amount, currency = 'INR', receipt, notes = {} }) => {
+    // ✅ Check if Razorpay is initialized
+    if (!razorpay) {
+      logger.error('Razorpay not configured');
+      return {
+        success: false,
+        error: 'Payment service is not configured. Please contact support.',
+      };
+    }
+
     try {
       const options = {
         amount: Math.round(amount * 100), // Convert to paise
@@ -37,6 +60,12 @@ const paymentService = {
 
   // Verify payment signature
   verifyPaymentSignature: ({ orderId, paymentId, signature }) => {
+    // ✅ Check if Razorpay is initialized
+    if (!razorpay || !process.env.RAZORPAY_KEY_SECRET) {
+      logger.error('Razorpay not configured for signature verification');
+      return false;
+    }
+
     try {
       const generatedSignature = crypto
         .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -60,6 +89,14 @@ const paymentService = {
 
   // Fetch payment details
   fetchPayment: async (paymentId) => {
+    // ✅ Check if Razorpay is initialized
+    if (!razorpay) {
+      return {
+        success: false,
+        error: 'Payment service is not configured',
+      };
+    }
+
     try {
       const payment = await razorpay.payments.fetch(paymentId);
       return {
@@ -77,6 +114,14 @@ const paymentService = {
 
   // Create refund
   createRefund: async (paymentId, amount) => {
+    // ✅ Check if Razorpay is initialized
+    if (!razorpay) {
+      return {
+        success: false,
+        error: 'Payment service is not configured',
+      };
+    }
+
     try {
       const refund = await razorpay.payments.refund(paymentId, {
         amount: Math.round(amount * 100), // Convert to paise
@@ -99,6 +144,14 @@ const paymentService = {
 
   // Fetch refund details
   fetchRefund: async (refundId) => {
+    // ✅ Check if Razorpay is initialized
+    if (!razorpay) {
+      return {
+        success: false,
+        error: 'Payment service is not configured',
+      };
+    }
+
     try {
       const refund = await razorpay.refunds.fetch(refundId);
       return {
