@@ -14,6 +14,11 @@ export const favoriteAPI = {
     }
   },
 
+  // ✅ Add alias for getMyFavorites (same as getFavorites)
+  getMyFavorites: async (params = {}) => {
+    return favoriteAPI.getFavorites(params);
+  },
+
   // Add pet to favorites
   addFavorite: async (petId) => {
     try {
@@ -43,6 +48,17 @@ export const favoriteAPI = {
       return response;
     } catch (error) {
       console.error('Check favorite API error:', error);
+      throw error;
+    }
+  },
+
+  // ✅ Get favorited pet IDs only (for quick checks)
+  getFavoritedPetIds: async () => {
+    try {
+      const response = await apiWrapper.get('/favorites/ids');
+      return response;
+    } catch (error) {
+      console.error('Get favorited pet IDs error:', error);
       throw error;
     }
   },

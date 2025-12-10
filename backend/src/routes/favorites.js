@@ -10,19 +10,24 @@ const { sanitizeRequest } = require('../middleware/validation');
 router.use(authenticateToken);
 router.use(sanitizeRequest);
 
-// Get user's favorites
+// Get user's favorites (with full pet details)
 router.get('/',
   favoriteController.getFavorites
 );
 
-// Add pet to favorites
-router.post('/',
-  favoriteController.addFavorite
+// ✅ Get favorited pet IDs only (lightweight - place BEFORE /check/:petId)
+router.get('/ids',
+  favoriteController.getFavoritedPetIds
 );
 
 // Check if pet is favorited
 router.get('/check/:petId',
   favoriteController.checkFavorite
+);
+
+// Add pet to favorites
+router.post('/',
+  favoriteController.addFavorite
 );
 
 // Remove pet from favorites

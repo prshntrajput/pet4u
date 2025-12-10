@@ -1,12 +1,13 @@
-import { Inter } from 'next/font/google';
+import { Grenze_Gotisch, Inria_Serif, Instrument_Serif, Inter } from 'next/font/google';
 import './globals.css';
 import ReduxProvider from '@/app/_component/providers/ReduxProviders';
 import QueryProvider from '@/app/_component/providers/Queryprovider';
 import AuthInitializer from './_component/providers/AuthInitializer';
 import { Toaster } from '@/components/ui/sonner';
 import SocketProvider from './_component/providers/SocketProviders';
+import { ThemeProvider } from '@/components/theme-provider';
 
-const inter = Inter({ subsets: ['latin'] });
+const instrumentSerif = Inria_Serif({ subsets: ['latin'] , weight: "700"  });
 
 export const metadata = {
   title: 'PET4U - Find Your Perfect Pet Companion',
@@ -21,7 +22,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={instrumentSerif.className}>
+        <ThemeProvider 
+        attribute="class"
+        defaultTheme="dark"
+        enableSytem
+        disableTransitionOnChange
+        >
         <ReduxProvider>
           <AuthInitializer>
           <QueryProvider>
@@ -32,6 +39,7 @@ export default function RootLayout({ children }) {
           </QueryProvider>
           </AuthInitializer>
         </ReduxProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

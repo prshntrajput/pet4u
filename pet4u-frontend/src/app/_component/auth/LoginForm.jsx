@@ -7,9 +7,9 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/lib/validations/authSchema';
-import { loginUser, clearError } from '@/lib/store/slices/authSlice';
+import { loginUser } from '@/lib/store/slices/authSlice';
 import { toast } from 'sonner';
-import { Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Loader2, PawPrint } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,6 @@ export default function LoginForm() {
         description: `Welcome back, ${result.user.name}!`,
       });
       
-      // Redirect based on role
       if (result.user.role === 'shelter') {
         router.push('/dashboard/shelter');
       } else {
@@ -58,17 +57,29 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-        <CardDescription className="text-center">
-          Sign in to your PET4U account
-        </CardDescription>
+    <Card className="w-full max-w-md border-2">
+      <CardHeader className="space-y-4 text-center">
+        {/* Logo */}
+        <Link href="/" className="flex justify-center">
+          <div className="inline-flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10 border-2 border-primary/20">
+              <PawPrint className="h-6 w-6 text-primary" />
+            </div>
+            <span className="text-2xl font-bold text-primary">Pet4u</span>
+          </div>
+        </Link>
+
+        <div>
+          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+          <CardDescription className="mt-2">
+            Sign in to your account
+          </CardDescription>
+        </div>
       </CardHeader>
       
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Email Field */}
+          {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
             <Input
@@ -76,23 +87,23 @@ export default function LoginForm() {
               type="email"
               placeholder="john@example.com"
               {...register('email')}
-              className={errors.email ? 'border-red-500' : ''}
+              className={`h-10 ${errors.email ? 'border-destructive' : ''}`}
               disabled={isLoading}
             />
             {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
+              <p className="text-xs text-destructive">{errors.email.message}</p>
             )}
           </div>
 
-          {/* Password Field */}
+          {/* Password */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
               <Link 
                 href="/forgot-password" 
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                className="text-xs text-primary hover:underline"
               >
-                Forgot password?
+                Forgot?
               </Link>
             </div>
             <div className="relative">
@@ -101,31 +112,31 @@ export default function LoginForm() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 {...register('password')}
-                className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                className={`h-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             {errors.password && (
-              <p className="text-sm text-red-500">{errors.password.message}</p>
+              <p className="text-xs text-destructive">{errors.password.message}</p>
             )}
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
               {error}
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit */}
           <Button 
             type="submit" 
             className="w-full" 
@@ -146,16 +157,23 @@ export default function LoginForm() {
         </form>
       </CardContent>
 
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link 
-            href="/register" 
-            className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
-          >
-            Sign up
-          </Link>
-        </p>
+      <CardFooter className="flex-col space-y-4">
+        <div className="relative w-full">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">
+              New here?
+            </span>
+          </div>
+        </div>
+
+        <Link href="/register" className="w-full">
+          <Button variant="outline" className="w-full">
+            Create an account
+          </Button>
+        </Link>
       </CardFooter>
     </Card>
   );

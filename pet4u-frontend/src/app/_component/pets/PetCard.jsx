@@ -5,16 +5,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addFavorite, removeFavorite } from '@/lib/store/slices/favoriteSlice';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { Heart, MapPin, Clock, AlertCircle, IndianRupee } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PetCard({ pet, showFavoriteButton = true }) {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const { favoritedPetIds, isAdding, isRemoving } = useSelector((state) => state.favorites);
+  const { favoritedPetIds } = useSelector((state) => state.favorites);
   
   const [isFavorited, setIsFavorited] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -50,9 +50,9 @@ export default function PetCard({ pet, showFavoriteButton = true }) {
   };
 
   const getAgeDisplay = () => {
-    if (!pet.age) return 'Age unknown';
-    const unit = pet.ageUnit === 'years' ? 'year' : 'month';
-    return `${pet.age} ${unit}${pet.age > 1 ? 's' : ''} old`;
+    if (!pet.age) return 'Unknown';
+    const unit = pet.ageUnit === 'years' ? 'yr' : 'mo';
+    return `${pet.age}${unit}`;
   };
 
   const getSpeciesIcon = () => {
@@ -69,112 +69,113 @@ export default function PetCard({ pet, showFavoriteButton = true }) {
 
   return (
     <Link href={`/pets/${pet.slug || pet.id}`}>
-      <Card className="group hover:shadow-lg transition-shadow duration-300 cursor-pointer overflow-hidden h-full">
-        {/* Image */}
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
+      <Card className="group hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer overflow-hidden border-2 h-full">
+        {/* Compact Image - 16:10 aspect ratio (even more compact) */}
+        <div className="relative aspect-[16/10] overflow-hidden bg-muted">
           {pet.primaryImage ? (
             <Image
               src={pet.primaryImage}
               alt={pet.name}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-6xl">
+            <div className="flex items-center justify-center h-full text-5xl bg-accent/20">
               {getSpeciesIcon()}
             </div>
           )}
           
-          {/* Favorite Button */}
+          {/* Compact Favorite Button */}
           {showFavoriteButton && (
             <button
               onClick={handleFavoriteToggle}
               disabled={isProcessing}
-              className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors z-10 disabled:opacity-50"
+              className="absolute top-1.5 right-1.5 p-1 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white hover:scale-110 transition-all z-10 disabled:opacity-50"
             >
               <Heart
-                size={20}
+                size={14}
                 className={`transition-colors ${
                   isFavorited 
                     ? 'fill-red-500 text-red-500' 
-                    : 'text-gray-600'
+                    : 'text-muted-foreground'
                 } ${isProcessing ? 'animate-pulse' : ''}`}
               />
             </button>
           )}
 
-          {/* Urgent Badge */}
-          {pet.isUrgent && (
-            <div className="absolute top-2 left-2 z-10">
-              <Badge variant="destructive" className="flex items-center space-x-1">
-                <AlertCircle size={14} />
-                <span>Urgent</span>
+          {/* Compact Badges */}
+          <div className="absolute top-1.5 left-1.5 flex gap-1 z-10">
+            {pet.isUrgent && (
+              <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4 leading-none">
+                <AlertCircle size={8} className="mr-0.5" />
+                Urgent
               </Badge>
-            </div>
-          )}
-
-          {/* Status Badge */}
-          <div className="absolute bottom-2 right-2 z-10">
+            )}
             <Badge
               variant={
                 pet.adoptionStatus === 'available' ? 'success' :
                 pet.adoptionStatus === 'pending' ? 'secondary' :
                 'default'
               }
+              className="text-[9px] px-1 py-0 h-4 leading-none capitalize"
             >
               {pet.adoptionStatus}
             </Badge>
           </div>
         </div>
 
-        {/* Content */}
-        <CardContent className="p-4 space-y-2">
-          {/* Name and Species */}
-          <div className="flex items-start justify-between">
+        {/* Ultra Compact Content */}
+        <CardContent className="p-2.5 space-y-1.5">
+          {/* Name Row */}
+          <div className="flex items-start justify-between gap-1.5">
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 truncate">
+              <h3 className="font-semibold text-sm leading-tight truncate">
                 {pet.name}
               </h3>
-              <p className="text-sm text-gray-600">
-                {pet.breed || pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
+              <p className="text-[11px] text-muted-foreground truncate leading-tight">
+                {pet.breed || pet.species?.charAt(0).toUpperCase() + pet.species?.slice(1)}
               </p>
             </div>
-            <span className="text-2xl ml-2">{getSpeciesIcon()}</span>
+            <span className="text-lg flex-shrink-0 leading-none">{getSpeciesIcon()}</span>
           </div>
 
-          {/* Details */}
-          <div className="space-y-1">
-            <div className="flex items-center text-sm text-gray-600">
-              <Clock size={14} className="mr-1" />
+          {/* Compact Details in Single Line */}
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-0.5">
+              <Clock size={10} />
               <span>{getAgeDisplay()}</span>
-              <span className="mx-2">•</span>
-              <span className="capitalize">{pet.gender}</span>
             </div>
-
-            <div className="flex items-center text-sm text-gray-600">
-              <MapPin size={14} className="mr-1" />
-              <span className="truncate">
-                {pet.city}, {pet.state}
-              </span>
-            </div>
+            <span>•</span>
+            <span className="capitalize truncate">{pet.gender}</span>
           </div>
 
-          {/* Description Preview */}
-          <p className="text-sm text-gray-700 line-clamp-2">
-            {pet.description}
-          </p>
+          <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+            <MapPin size={10} className="flex-shrink-0" />
+            <span className="truncate">{pet.city}, {pet.state}</span>
+          </div>
+
+          {/* Price and CTA in one line */}
+          <div className="flex items-center justify-between pt-1 border-t">
+            <div className="flex items-center font-bold text-xs">
+              {pet.adoptionFee > 0 ? (
+                <div className="flex items-center text-primary">
+                  <IndianRupee size={11} />
+                  <span>{pet.adoptionFee}</span>
+                </div>
+              ) : (
+                <span className="text-green-600">Free</span>
+              )}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 text-[10px] px-2 hover:bg-primary hover:text-primary-foreground"
+            >
+              View
+            </Button>
+          </div>
         </CardContent>
-
-        {/* Footer */}
-        <CardFooter className="p-4 pt-0 flex items-center justify-between">
-          <div className="text-lg font-bold text-blue-600">
-            {pet.adoptionFee > 0 ? `₹${pet.adoptionFee}` : 'Free'}
-          </div>
-          <Button variant="outline" size="sm">
-            View Details
-          </Button>
-        </CardFooter>
       </Card>
     </Link>
   );

@@ -572,103 +572,189 @@ const petController = {
   },
 
   // Upload pet images
-  uploadPetImages: async (req, res) => {
-    const requestId = req.requestId;
-    const userId = req.user.userId;
-    const { petId } = req.params;
+ // ✅ FIXED: Upload pet images - Works with memory storage
+uploadPetImages: async (req, res) => {
+  const requestId = req.requestId;
+  const userId = req.user.userId;
+  const { petId } = req.params;
 
-    try {
-      // Check if pet exists and belongs to user
-      const existingPet = await db
-        .select()
-        .from(pets)
-        .where(and(
-          eq(pets.id, petId),
-          eq(pets.ownerId, userId)
-        ))
-        .limit(1);
+  try {
+    logger.info('Upload pet images started', {
+      petId,
+      userId,
+      filesCount: req.files?.length,
+      hasCloudinaryResults: !!req.cloudinaryResults,
+      requestId
+    });
 
-      if (existingPet.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Pet not found or you do not have permission to upload images',
-          requestId
-        });
+    // Check if pet exists and belongs to user
+    const existingPet = await db
+      .select()
+      .from(pets)
+      .where(and(
+        eq(pets.id, petId),
+        eq(pets.ownerId, userId)
+      ))
+      .limit(1);
+
+    if (existingPet.length === 0) {
+      // Delete uploaded images from Cloudinary if pet not found
+      if (req.cloudinaryResults && req.cloudinaryResults.length > 0) {
+        const { cloudinaryUtils } = require('../config/cloudinary');
+        const publicIds = req.cloudinaryResults.map(r => r.public_id);
+        await cloudinaryUtils.deleteMultipleImages(publicIds).catch(err => 
+          logger.warn('Failed to cleanup images:', err)
+        );
       }
 
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'No image files provided',
-          requestId
-        });
-      }
-
-      // Get current image count
-      const currentImages = await db
-        .select({ count: sql`count(*)` })
-        .from(petImages)
-        .where(eq(petImages.petId, petId));
-
-      const currentCount = parseInt(currentImages[0].count);
-      const newImages = [];
-
-      // Insert new images
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-        const imageId = createId();
-        
-        const newImage = await db
-          .insert(petImages)
-          .values({
-            id: imageId,
-            petId: petId,
-            imageUrl: file.path,
-            cloudinaryPublicId: file.filename,
-            isPrimary: currentCount === 0 && i === 0, // First image is primary if no images exist
-            sortOrder: currentCount + i,
-          })
-          .returning();
-
-        newImages.push(newImage[0]);
-
-        // Set first image as primary image for pet if no primary image exists
-        if (currentCount === 0 && i === 0) {
-          await db
-            .update(pets)
-            .set({ 
-              primaryImage: file.path,
-              updatedAt: new Date()
-            })
-            .where(eq(pets.id, petId));
-        }
-      }
-
-      logger.info('Pet images uploaded successfully', {
-        petId,
-        userId,
-        imageCount: req.files.length,
-        requestId
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Images uploaded successfully',
-        data: {
-          images: newImages
-        },
-        requestId
-      });
-
-    } catch (error) {
-      logger.error('Upload pet images error:', { error: error.message, petId, userId, requestId });
-      res.status(500).json({
+      return res.status(404).json({
         success: false,
-        message: 'Failed to upload images',
+        message: 'Pet not found or you do not have permission to upload images',
         requestId
       });
     }
-  },
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image files provided',
+        requestId
+      });
+    }
+
+    if (!req.cloudinaryResults || req.cloudinaryResults.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Image upload to Cloudinary failed',
+        requestId
+      });
+    }
+
+    // Get current image count
+    const currentImages = await db
+      .select({ count: sql`count(*)` })
+      .from(petImages)
+      .where(eq(petImages.petId, petId));
+
+    const currentCount = parseInt(currentImages[0].count);
+
+    // Check max images limit (10)
+    if (currentCount + req.cloudinaryResults.length > 10) {
+      // Delete uploaded images from Cloudinary
+      const { cloudinaryUtils } = require('../config/cloudinary');
+      const publicIds = req.cloudinaryResults.map(r => r.public_id);
+      await cloudinaryUtils.deleteMultipleImages(publicIds).catch(err => 
+        logger.warn('Failed to cleanup images:', err)
+      );
+
+      return res.status(400).json({
+        success: false,
+        message: `Maximum 10 images allowed. You already have ${currentCount} images.`,
+        requestId
+      });
+    }
+
+    const newImages = [];
+
+    // Insert new images using Cloudinary results
+    for (let i = 0; i < req.cloudinaryResults.length; i++) {
+      const cloudinaryResult = req.cloudinaryResults[i];
+      
+      logger.info('Processing Cloudinary result', {
+        index: i,
+        secure_url: cloudinaryResult.secure_url,
+        public_id: cloudinaryResult.public_id,
+        width: cloudinaryResult.width,
+        height: cloudinaryResult.height,
+        format: cloudinaryResult.format
+      });
+
+      const imageId = createId();
+      
+      const newImage = await db
+        .insert(petImages)
+        .values({
+          id: imageId,
+          petId: petId,
+          imageUrl: cloudinaryResult.secure_url,
+          cloudinaryPublicId: cloudinaryResult.public_id,
+          thumbnailUrl: cloudinaryResult.eager?.[0]?.secure_url || null,
+          isPrimary: currentCount === 0 && i === 0, // First image is primary if no images exist
+          sortOrder: currentCount + i,
+          width: cloudinaryResult.width,
+          height: cloudinaryResult.height,
+          fileSize: cloudinaryResult.bytes,
+          caption: null,
+          altText: `${existingPet[0].name} - Image ${currentCount + i + 1}`,
+        })
+        .returning();
+
+      newImages.push(newImage[0]);
+
+      // Set first image as primary image for pet if no primary image exists
+      if (currentCount === 0 && i === 0) {
+        await db
+          .update(pets)
+          .set({ 
+            primaryImage: cloudinaryResult.secure_url,
+            updatedAt: new Date()
+          })
+          .where(eq(pets.id, petId));
+        
+        logger.info('Set primary image for pet', { 
+          petId, 
+          imageUrl: cloudinaryResult.secure_url 
+        });
+      }
+    }
+
+    logger.info('Pet images uploaded successfully', {
+      petId,
+      userId,
+      imageCount: req.cloudinaryResults.length,
+      newImages: newImages.map(img => ({ id: img.id, url: img.imageUrl })),
+      requestId
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${req.cloudinaryResults.length} image(s) uploaded successfully`,
+      data: {
+        images: newImages
+      },
+      requestId
+    });
+
+  } catch (error) {
+    logger.error('Upload pet images error:', { 
+      error: error.message, 
+      stack: error.stack,
+      petId, 
+      userId, 
+      requestId 
+    });
+
+    // Cleanup uploaded images on error
+    if (req.cloudinaryResults && req.cloudinaryResults.length > 0) {
+      try {
+        const { cloudinaryUtils } = require('../config/cloudinary');
+        const publicIds = req.cloudinaryResults.map(r => r.public_id);
+        await cloudinaryUtils.deleteMultipleImages(publicIds);
+        logger.info('Cleaned up uploaded images after error');
+      } catch (cleanupError) {
+        logger.warn('Failed to cleanup images after error:', cleanupError);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload images',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      requestId
+    });
+  }
+},
+
 
   // Delete pet image
   deletePetImage: async (req, res) => {

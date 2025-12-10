@@ -161,11 +161,12 @@ const handleMultiplePetImagesUpload = async (req, res, next) => {
       return next();
     }
 
-    const petId = req.body?.petId || 'temp';
+    // ✅ Get petId from route params, not body
+    const petId = req.params.petId || 'temp';
     const uploadPromises = req.files.map((file, index) => {
       const timestamp = Date.now();
       return uploadToCloudinary(file.buffer, {
-        folder: 'pet4u/pets',
+        folder: `pet4u/pets/${petId}`, // ✅ Organize by petId
         public_id: `pet-${petId}-${timestamp}-${index}`,
         transformation: [
           { width: 1200, height: 900, crop: 'limit' },
@@ -178,13 +179,27 @@ const handleMultiplePetImagesUpload = async (req, res, next) => {
 
     const results = await Promise.all(uploadPromises);
     req.cloudinaryResults = results;
+    
+    logger.info('Cloudinary upload completed', {
+      petId,
+      imageCount: results.length,
+      publicIds: results.map(r => r.public_id)
+    });
+    
     next();
   } catch (error) {
-    console.log('[DEBUG] cloudinaryResults:', req.cloudinaryResults);
-    logger.error('Error uploading multiple pet images to Cloudinary:', error);
+    logger.error('Error uploading multiple pet images to Cloudinary:', {
+      error: error.message,
+      stack: error.stack,
+      petId: req.params.petId,
+      fileCount: req.files?.length
+    });
+    
+    // Pass error to next middleware
     next(error);
   }
 };
+
 
 // Utility functions for Cloudinary operations
 const cloudinaryUtils = {

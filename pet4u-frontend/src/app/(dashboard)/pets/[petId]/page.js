@@ -31,10 +31,12 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  IndianRupee
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PetReviewsSection from '@/app/_component/pets/PetReviewsSection';
+import RazorpayCheckout from '../../../_component/payments/RazorPayCheckout';
 
 export default function PetDetailPage() {
   const params = useParams();
@@ -48,16 +50,17 @@ export default function PetDetailPage() {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
-    if (params.petId) {
+    if (params?.petId) { // ✅ Added optional chaining
       dispatch(fetchPetById(params.petId));
     }
 
     return () => {
       dispatch(clearCurrentPet());
     };
-  }, [params.petId, dispatch]);
+  }, [params?.petId, dispatch]); // ✅ Added optional chaining
 
   if (isLoading) {
     return (
@@ -83,7 +86,7 @@ export default function PetDetailPage() {
 
   const pet = currentPet;
   const images = pet.images || [];
-  const displayImages = images.length > 0 ? images : [{ imageUrl: pet.primaryImage }];
+  const displayImages = images.length > 0 ? images : (pet.primaryImage ? [{ imageUrl: pet.primaryImage }] : []); // ✅ Added check
 
   const getAgeDisplay = () => {
     if (!pet.age) return 'Age unknown';
@@ -92,22 +95,51 @@ export default function PetDetailPage() {
   };
 
   const handleFavoriteToggle = () => {
+    if (!user) {
+      toast.error('Please login to save favorites');
+      router.push('/login');
+      return;
+    }
     setIsFavorite(!isFavorite);
     toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
     // TODO: Implement favorite API call
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Meet ${pet.name}`,
-        text: pet.description,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
+  const handleShare = async () => { // ✅ Made async
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Meet ${pet.name}`,
+          text: pet.description || `Check out ${pet.name}, a lovely ${pet.species} looking for a home!`,
+          url: window.location.href,
+        });
+        toast.success('Shared successfully!');
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (error) {
+      // User cancelled share or clipboard failed
+      if (error.name !== 'AbortError') {
+        toast.error('Failed to share');
+      }
     }
+  };
+
+  // ✅ Payment success handler
+  const handlePaymentSuccess = (payment) => {
+    setPaymentCompleted(true);
+    toast.success('Payment successful! You can now proceed with adoption request.');
+    // Auto-open the adoption request dialog after a short delay
+    setTimeout(() => {
+      setShowRequestDialog(true);
+    }, 1000);
+  };
+
+  // ✅ Payment error handler
+  const handlePaymentError = (error) => {
+    console.error('Payment error:', error);
+    toast.error(error?.message || 'Payment failed. Please try again.');
   };
 
   const handleAdoptionRequest = async () => {
@@ -119,6 +151,13 @@ export default function PetDetailPage() {
 
     if (user.role !== 'adopter') {
       toast.error('Only adopters can send adoption requests');
+      return;
+    }
+
+    // ✅ Check if payment is required and completed
+    if (pet.adoptionFee > 0 && !paymentCompleted) {
+      toast.error('Please complete the payment first');
+      setShowRequestDialog(false);
       return;
     }
 
@@ -138,6 +177,11 @@ export default function PetDetailPage() {
       toast.success('Adoption request sent successfully!');
       setShowRequestDialog(false);
       setRequestMessage('');
+      
+      // Show success message before redirect
+      setTimeout(() => {
+        router.push('/adoption-requests'); // ✅ Updated path
+      }, 1500);
     } catch (error) {
       toast.error(error || 'Failed to send adoption request');
     } finally {
@@ -157,8 +201,17 @@ export default function PetDetailPage() {
       return;
     }
 
+    // ✅ Check if payment is required
+    if (pet.adoptionFee > 0 && !paymentCompleted) {
+      toast.info('Please complete the payment to proceed with adoption');
+      return;
+    }
+
     setShowRequestDialog(true);
   };
+
+  // ✅ Check if user owns this pet
+  const isOwner = user?.id === pet.ownerId || user?.userId === pet.ownerId;
 
   return (
     <>
@@ -182,6 +235,7 @@ export default function PetDetailPage() {
                     fill
                     className="object-cover"
                     priority
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-8xl">
@@ -210,6 +264,7 @@ export default function PetDetailPage() {
                         alt={`${pet.name} - ${index + 1}`}
                         fill
                         className="object-cover"
+                        sizes="100px"
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full bg-gray-100">
@@ -226,7 +281,7 @@ export default function PetDetailPage() {
               <CardContent className="p-6 space-y-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">About {pet.name}</h2>
-                  <p className="text-gray-700 whitespace-pre-wrap">{pet.description}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{pet.description || 'No description available.'}</p>
                 </div>
 
                 {pet.story && (
@@ -375,7 +430,7 @@ export default function PetDetailPage() {
                     )}
                   </div>
                   <p className="text-lg text-gray-600">
-                    {pet.breed || pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
+                    {pet.breed || (pet.species ? pet.species.charAt(0).toUpperCase() + pet.species.slice(1) : 'Pet')}
                   </p>
                 </div>
 
@@ -389,16 +444,8 @@ export default function PetDetailPage() {
                     }
                     className="text-sm"
                   >
-                    {pet.adoptionStatus.charAt(0).toUpperCase() + pet.adoptionStatus.slice(1)}
+                    {pet.adoptionStatus ? pet.adoptionStatus.charAt(0).toUpperCase() + pet.adoptionStatus.slice(1) : 'Unknown'}
                   </Badge>
-                </div>
-
-                {/* Adoption Fee */}
-                <div className="py-4 border-y">
-                  <div className="text-sm text-gray-600">Adoption Fee</div>
-                  <div className="text-3xl font-bold text-blue-600">
-                    {pet.adoptionFee > 0 ? `₹${pet.adoptionFee}` : 'Free'}
-                  </div>
                 </div>
 
                 {/* Quick Info */}
@@ -410,7 +457,7 @@ export default function PetDetailPage() {
 
                   <div className="flex items-center text-gray-700">
                     <Ruler className="h-5 w-5 mr-3 text-gray-500" />
-                    <span className="capitalize">{pet.gender}</span>
+                    <span className="capitalize">{pet.gender || 'Unknown'}</span>
                     {pet.size && <span className="ml-2">• {pet.size.replace('_', ' ')}</span>}
                   </div>
 
@@ -421,11 +468,56 @@ export default function PetDetailPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center text-gray-700">
-                    <MapPin className="h-5 w-5 mr-3 text-gray-500" />
-                    <span>{pet.city}, {pet.state}</span>
-                  </div>
+                  {(pet.city || pet.state) && (
+                    <div className="flex items-center text-gray-700">
+                      <MapPin className="h-5 w-5 mr-3 text-gray-500" />
+                      <span>{pet.city}{pet.city && pet.state ? ', ' : ''}{pet.state}</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* ✅ Adoption Fee & Payment Section */}
+                {pet.adoptionFee > 0 && (
+                  <div className="py-4 border-y">
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Adoption Fee</div>
+                        <div className="text-3xl font-bold text-blue-600 flex items-center">
+                          <IndianRupee className="h-7 w-7" />
+                          {pet.adoptionFee}
+                        </div>
+                      </div>
+                      
+                      {paymentCompleted ? (
+                        <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-lg">
+                          <CheckCircle className="h-5 w-5" />
+                          <span className="font-medium">Payment Completed</span>
+                        </div>
+                      ) : (
+                        <RazorpayCheckout
+                          amount={parseFloat(pet.adoptionFee)}
+                          petId={pet.id}
+                          petName={pet.name}
+                          paymentType="adoption_fee"
+                          description={`Adoption fee for ${pet.name}`}
+                          onSuccess={handlePaymentSuccess}
+                          onError={handlePaymentError}
+                          disabled={pet.adoptionStatus !== 'available' || isOwner}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ✅ Free Adoption Badge */}
+                {(pet.adoptionFee === 0 || !pet.adoptionFee) && (
+                  <div className="py-4 border-y">
+                    <Badge variant="success" className="text-lg px-4 py-2">
+                      <CheckCircle className="mr-2 h-5 w-5" />
+                      Free Adoption
+                    </Badge>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="space-y-2 pt-4">
@@ -433,9 +525,19 @@ export default function PetDetailPage() {
                     className="w-full"
                     size="lg"
                     onClick={handleOpenRequestDialog}
-                    disabled={pet.adoptionStatus !== 'available' || pet.ownerId === user?.id}
+                    disabled={
+                      pet.adoptionStatus !== 'available' || 
+                      isOwner ||
+                      (pet.adoptionFee > 0 && !paymentCompleted)
+                    }
                   >
-                    {pet.ownerId === user?.id ? 'Your Listing' : 'Send Adoption Request'}
+                    {isOwner
+                      ? 'Your Listing' 
+                      : pet.adoptionStatus !== 'available'
+                      ? 'Not Available'
+                      : pet.adoptionFee > 0 && !paymentCompleted
+                      ? 'Complete Payment First'
+                      : 'Send Adoption Request'}
                   </Button>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -473,30 +575,40 @@ export default function PetDetailPage() {
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={pet.owner.profileImage} alt={pet.owner.name} />
-                      <AvatarFallback>
-                        {pet.owner.name.charAt(0).toUpperCase()}
+                      <AvatarFallback className="bg-blue-600 text-white">
+                        {pet.owner.name?.charAt(0).toUpperCase() || 'O'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium text-gray-900">{pet.owner.name}</div>
-                      <div className="text-sm text-gray-600 capitalize">{pet.owner.role}</div>
+                      <div className="font-medium text-gray-900">{pet.owner.name || 'Unknown'}</div>
+                      <div className="text-sm text-gray-600 capitalize">{pet.owner.role || 'Owner'}</div>
                     </div>
                   </div>
 
-                  {pet.owner.city && (
+                  {(pet.owner.city || pet.owner.state) && (
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin size={16} className="mr-2" />
-                      {pet.owner.city}, {pet.owner.state}
+                      {pet.owner.city}{pet.owner.city && pet.owner.state ? ', ' : ''}{pet.owner.state}
                     </div>
                   )}
 
                   <div className="space-y-2 pt-2">
-                    <Button variant="outline" className="w-full" size="sm">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      size="sm"
+                      onClick={() => router.push(`/messages/${pet.owner.id}`)}
+                    >
                       <Mail size={16} className="mr-2" />
                       Send Message
                     </Button>
                     {pet.owner.role === 'shelter' && (
-                      <Button variant="outline" className="w-full" size="sm">
+                      <Button 
+                        variant="outline" 
+                        className="w-full" 
+                        size="sm"
+                        onClick={() => router.push(`/shelters/${pet.owner.id}`)}
+                      >
                         View Shelter Profile
                       </Button>
                     )}
@@ -510,7 +622,7 @@ export default function PetDetailPage() {
               <Card className="border-red-200 bg-red-50">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-2">
-                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-red-900 mb-1">Urgent Adoption</h4>
                       <p className="text-sm text-red-800">{pet.urgentReason}</p>
@@ -522,12 +634,14 @@ export default function PetDetailPage() {
           </div>
         </div>
       </div>
+      
+      {/* Reviews Section */}
       <div className="mt-12">
-         <PetReviewsSection 
+        <PetReviewsSection 
           petId={pet.id} 
-          canReview={user?.role === 'adopter' && pet.ownerId !== user?.userId}
-         />
-         </div>
+          canReview={user?.role === 'adopter' && !isOwner}
+        />
+      </div>
 
       {/* Adoption Request Dialog */}
       <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
@@ -539,22 +653,32 @@ export default function PetDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <Textarea
-              value={requestMessage}
-              onChange={(e) => setRequestMessage(e.target.value)}
-              placeholder="Explain why you would be a good fit for this pet, your experience with pets, your living situation, etc..."
-              rows={6}
-              maxLength={1000}
-              className={requestMessage.length > 0 && requestMessage.length < 20 ? 'border-red-500' : ''}
-            />
-            <p className={`text-xs ${
-              requestMessage.length < 20 && requestMessage.length > 0
-                ? 'text-red-500'
-                : 'text-gray-500'
-            }`}>
-              {requestMessage.length}/1000 characters 
-              {requestMessage.length < 20 && requestMessage.length > 0 && ' (minimum 20 required)'}
-            </p>
+            {/* ✅ Payment confirmation badge */}
+            {pet.adoptionFee > 0 && paymentCompleted && (
+              <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-lg">
+                <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                <span className="text-sm font-medium">Payment of ₹{pet.adoptionFee} completed</span>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Textarea
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value)}
+                placeholder="Explain why you would be a good fit for this pet, your experience with pets, your living situation, etc..."
+                rows={6}
+                maxLength={1000}
+                className={requestMessage.length > 0 && requestMessage.length < 20 ? 'border-red-500' : ''}
+              />
+              <p className={`text-xs ${
+                requestMessage.length < 20 && requestMessage.length > 0
+                  ? 'text-red-500'
+                  : 'text-gray-500'
+              }`}>
+                {requestMessage.length}/1000 characters 
+                {requestMessage.length < 20 && requestMessage.length > 0 && ' (minimum 20 required)'}
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button

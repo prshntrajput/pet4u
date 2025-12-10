@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema } from '@/lib/validations/authSchema';
 import { registerUser, clearRegistrationSuccess, clearError } from '@/lib/store/slices/authSlice';
 import { toast } from 'sonner';
-import { Eye, EyeOff, UserPlus, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, UserPlus, Loader2, PawPrint, CheckCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,7 @@ export default function RegisterForm() {
   });
 
   const watchRole = watch('role');
+  const watchPassword = watch('password');
 
   // Handle successful registration
   useEffect(() => {
@@ -54,7 +55,6 @@ export default function RegisterForm() {
         description: 'Please check your email to verify your account.',
       });
       
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         dispatch(clearRegistrationSuccess());
         router.push('/login');
@@ -62,7 +62,6 @@ export default function RegisterForm() {
     }
   }, [registrationSuccess, dispatch, router]);
 
-  // Clear errors when component unmounts
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -79,13 +78,34 @@ export default function RegisterForm() {
     }
   };
 
+  // Password strength checker
+  const passwordChecks = {
+    length: watchPassword?.length >= 8,
+    uppercase: /[A-Z]/.test(watchPassword),
+    lowercase: /[a-z]/.test(watchPassword),
+    number: /[0-9]/.test(watchPassword),
+    special: /[@$!%*?&]/.test(watchPassword),
+  };
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
-        <CardDescription className="text-center">
-          Join PET4U and find your perfect companion
-        </CardDescription>
+    <Card className="w-full max-w-2xl mx-auto border-2">
+      <CardHeader className="space-y-4 text-center">
+        {/* Logo */}
+        <Link href="/" className="flex justify-center">
+          <div className="inline-flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10 border-2 border-primary/20">
+              <PawPrint className="h-6 w-6 text-primary" />
+            </div>
+            <span className="text-2xl font-bold text-primary">Pet4u</span>
+          </div>
+        </Link>
+
+        <div>
+          <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
+          <CardDescription className="mt-2">
+            Join Pet4u and find your perfect companion
+          </CardDescription>
+        </div>
       </CardHeader>
       
       <CardContent>
@@ -98,11 +118,11 @@ export default function RegisterForm() {
               type="text"
               placeholder="John Doe"
               {...register('name')}
-              className={errors.name ? 'border-red-500' : ''}
+              className={`h-10 ${errors.name ? 'border-destructive' : ''}`}
               disabled={isLoading}
             />
             {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
+              <p className="text-xs text-destructive">{errors.name.message}</p>
             )}
           </div>
 
@@ -115,11 +135,11 @@ export default function RegisterForm() {
                 type="email"
                 placeholder="john@example.com"
                 {...register('email')}
-                className={errors.email ? 'border-red-500' : ''}
+                className={`h-10 ${errors.email ? 'border-destructive' : ''}`}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-xs text-destructive">{errors.email.message}</p>
               )}
             </div>
 
@@ -130,11 +150,11 @@ export default function RegisterForm() {
                 type="tel"
                 placeholder="9876543210"
                 {...register('phone')}
-                className={errors.phone ? 'border-red-500' : ''}
+                className={`h-10 ${errors.phone ? 'border-destructive' : ''}`}
                 disabled={isLoading}
               />
               {errors.phone && (
-                <p className="text-sm text-red-500">{errors.phone.message}</p>
+                <p className="text-xs text-destructive">{errors.phone.message}</p>
               )}
             </div>
           </div>
@@ -142,36 +162,51 @@ export default function RegisterForm() {
           {/* Role Selection */}
           <div className="space-y-2">
             <Label>I am a...</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
+            <div className="grid grid-cols-2 gap-3">
+              <label 
+                htmlFor="adopter"
+                className={`flex items-center justify-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  watchRole === 'adopter' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
                 <input
                   type="radio"
                   id="adopter"
                   value="adopter"
                   {...register('role')}
-                  className="w-4 h-4 text-blue-600"
+                  className="sr-only"
                   disabled={isLoading}
                 />
-                <Label htmlFor="adopter" className="font-normal cursor-pointer">
+                <span className={`text-sm font-medium ${watchRole === 'adopter' ? 'text-primary' : ''}`}>
                   Pet Adopter
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
+                </span>
+              </label>
+
+              <label 
+                htmlFor="shelter"
+                className={`flex items-center justify-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  watchRole === 'shelter' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
                 <input
                   type="radio"
                   id="shelter"
                   value="shelter"
                   {...register('role')}
-                  className="w-4 h-4 text-blue-600"
+                  className="sr-only"
                   disabled={isLoading}
                 />
-                <Label htmlFor="shelter" className="font-normal cursor-pointer">
-                  Pet Shelter/Seller
-                </Label>
-              </div>
+                <span className={`text-sm font-medium ${watchRole === 'shelter' ? 'text-primary' : ''}`}>
+                  Shelter/Seller
+                </span>
+              </label>
             </div>
             {errors.role && (
-              <p className="text-sm text-red-500">{errors.role.message}</p>
+              <p className="text-xs text-destructive">{errors.role.message}</p>
             )}
           </div>
 
@@ -185,20 +220,20 @@ export default function RegisterForm() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   {...register('password')}
-                  className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                  className={`h-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
+                <p className="text-xs text-destructive">{errors.password.message}</p>
               )}
             </div>
 
@@ -210,37 +245,52 @@ export default function RegisterForm() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   {...register('confirmPassword')}
-                  className={errors.confirmPassword ? 'border-red-500 pr-10' : 'pr-10'}
+                  className={`h-10 pr-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                   tabIndex={-1}
                 >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+                <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
               )}
             </div>
           </div>
 
           {/* Password Requirements */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-xs text-blue-800 font-medium mb-1">Password Requirements:</p>
-            <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
-              <li>At least 8 characters long</li>
-              <li>Contains uppercase and lowercase letters</li>
-              <li>Contains at least one number</li>
-              <li>Contains at least one special character (@$!%*?&)</li>
-            </ul>
-          </div>
+          {watchPassword && (
+            <div className="p-3 bg-muted border rounded-lg space-y-2">
+              <p className="text-xs font-medium mb-2">Password Requirements:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'length', label: 'At least 8 characters' },
+                  { key: 'uppercase', label: 'Uppercase letter' },
+                  { key: 'lowercase', label: 'Lowercase letter' },
+                  { key: 'number', label: 'Number' },
+                  { key: 'special', label: 'Special character' },
+                ].map((check) => (
+                  <div key={check.key} className="flex items-center gap-2">
+                    <CheckCircle2 
+                      size={14} 
+                      className={passwordChecks[check.key] ? 'text-green-600' : 'text-muted-foreground'} 
+                    />
+                    <span className={`text-xs ${passwordChecks[check.key] ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {check.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Terms and Conditions */}
-          <div className="flex items-start space-x-2">
+          <div className="flex items-start gap-2">
             <Controller
               name="agreeToTerms"
               control={control}
@@ -250,6 +300,7 @@ export default function RegisterForm() {
                   checked={field.value}
                   onCheckedChange={field.onChange}
                   disabled={isLoading}
+                  className="mt-1"
                 />
               )}
             />
@@ -258,22 +309,22 @@ export default function RegisterForm() {
               className="text-sm font-normal cursor-pointer leading-tight"
             >
               I agree to the{' '}
-              <Link href="/terms" className="text-blue-600 hover:underline">
+              <Link href="/terms" className="text-primary hover:underline">
                 Terms of Service
               </Link>
               {' '}and{' '}
-              <Link href="/privacy" className="text-blue-600 hover:underline">
+              <Link href="/privacy" className="text-primary hover:underline">
                 Privacy Policy
               </Link>
             </Label>
           </div>
           {errors.agreeToTerms && (
-            <p className="text-sm text-red-500">{errors.agreeToTerms.message}</p>
+            <p className="text-xs text-destructive">{errors.agreeToTerms.message}</p>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
               {error}
             </div>
           )}
@@ -299,16 +350,23 @@ export default function RegisterForm() {
         </form>
       </CardContent>
 
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link 
-            href="/login" 
-            className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
-          >
-            Sign in
-          </Link>
-        </p>
+      <CardFooter className="flex-col space-y-4">
+        <div className="relative w-full">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">
+              Already registered?
+            </span>
+          </div>
+        </div>
+
+        <Link href="/login" className="w-full">
+          <Button variant="outline" className="w-full">
+            Sign in instead
+          </Button>
+        </Link>
       </CardFooter>
     </Card>
   );

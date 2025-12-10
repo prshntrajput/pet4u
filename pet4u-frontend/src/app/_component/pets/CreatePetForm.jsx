@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { Loader2, Save, Upload, Info, Heart, Activity, FileText, MapPin, Image as ImageIcon, X } from 'lucide-react';
 
 export default function CreatePetForm() {
   const dispatch = useDispatch();
@@ -82,7 +82,6 @@ export default function CreatePetForm() {
       return;
     }
 
-    // Validate file types and sizes
     const validFiles = files.filter((file) => {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not an image file`);
@@ -97,14 +96,19 @@ export default function CreatePetForm() {
 
     setSelectedFiles(validFiles);
 
-    // Create preview URLs
     const urls = validFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
   };
 
+  const removeImage = (index) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    const newUrls = previewUrls.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+    setPreviewUrls(newUrls);
+  };
+
   const onSubmit = async (data) => {
     try {
-      // Convert string numbers to actual numbers
       const formattedData = {
         ...data,
         age: data.age ? parseInt(data.age) : undefined,
@@ -112,10 +116,8 @@ export default function CreatePetForm() {
         adoptionFee: data.adoptionFee ? parseFloat(data.adoptionFee) : 0,
       };
 
-      // Create pet
       const result = await dispatch(createPet(formattedData)).unwrap();
       
-      // Upload images if any
       if (selectedFiles.length > 0 && result.id) {
         setIsUploading(true);
         try {
@@ -139,30 +141,39 @@ export default function CreatePetForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Basic Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Info className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Basic Information</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Pet Name *</Label>
+              <Label htmlFor="name" className="text-sm font-semibold">
+                Pet Name <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="name"
                 {...register('name')}
-                className={errors.name ? 'border-red-500' : ''}
+                className={`h-10 border-2 ${errors.name ? 'border-destructive' : ''}`}
               />
               {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
+                <p className="text-xs text-destructive">{errors.name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="species">Species *</Label>
+              <Label htmlFor="species" className="text-sm font-semibold">
+                Species <span className="text-destructive">*</span>
+              </Label>
               <select
                 id="species"
                 {...register('species')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="dog">Dog</option>
                 <option value="cat">Cat</option>
@@ -176,20 +187,18 @@ export default function CreatePetForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="breed">Breed</Label>
+              <Label htmlFor="breed" className="text-sm font-semibold">Breed</Label>
               <Input
                 id="breed"
                 {...register('breed')}
                 placeholder="e.g., Labrador Retriever"
+                className="h-10 border-2"
               />
             </div>
 
             <div className="flex items-center space-x-2 pt-8">
-              <Checkbox
-                id="mixedBreed"
-                {...register('mixedBreed')}
-              />
-              <Label htmlFor="mixedBreed" className="font-normal cursor-pointer">
+              <Checkbox id="mixedBreed" {...register('mixedBreed')} />
+              <Label htmlFor="mixedBreed" className="text-sm font-normal cursor-pointer">
                 Mixed Breed
               </Label>
             </div>
@@ -197,20 +206,21 @@ export default function CreatePetForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="age">Age</Label>
+              <Label htmlFor="age" className="text-sm font-semibold">Age</Label>
               <Input
                 id="age"
                 type="number"
                 {...register('age', { valueAsNumber: true })}
+                className="h-10 border-2"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ageUnit">Age Unit</Label>
+              <Label htmlFor="ageUnit" className="text-sm font-semibold">Age Unit</Label>
               <select
                 id="ageUnit"
                 {...register('ageUnit')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="months">Months</option>
                 <option value="years">Years</option>
@@ -218,11 +228,8 @@ export default function CreatePetForm() {
             </div>
 
             <div className="flex items-center space-x-2 pt-8">
-              <Checkbox
-                id="ageEstimated"
-                {...register('ageEstimated')}
-              />
-              <Label htmlFor="ageEstimated" className="font-normal cursor-pointer">
+              <Checkbox id="ageEstimated" {...register('ageEstimated')} />
+              <Label htmlFor="ageEstimated" className="text-sm font-normal cursor-pointer">
                 Estimated
               </Label>
             </div>
@@ -230,11 +237,13 @@ export default function CreatePetForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="gender">Gender *</Label>
+              <Label htmlFor="gender" className="text-sm font-semibold">
+                Gender <span className="text-destructive">*</span>
+              </Label>
               <select
                 id="gender"
                 {...register('gender')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -242,11 +251,11 @@ export default function CreatePetForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="size">Size</Label>
+              <Label htmlFor="size" className="text-sm font-semibold">Size</Label>
               <select
                 id="size"
                 {...register('size')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="small">Small</option>
                 <option value="medium">Medium</option>
@@ -256,32 +265,35 @@ export default function CreatePetForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)</Label>
+              <Label htmlFor="weight" className="text-sm font-semibold">Weight (kg)</Label>
               <Input
                 id="weight"
                 type="number"
                 step="0.1"
                 {...register('weight', { valueAsNumber: true })}
+                className="h-10 border-2"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
+              <Label htmlFor="color" className="text-sm font-semibold">Color</Label>
               <Input
                 id="color"
                 {...register('color')}
                 placeholder="e.g., Brown, Black & White"
+                className="h-10 border-2"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="markings">Markings</Label>
+              <Label htmlFor="markings" className="text-sm font-semibold">Markings</Label>
               <Input
                 id="markings"
                 {...register('markings')}
                 placeholder="e.g., White spot on chest"
+                className="h-10 border-2"
               />
             </div>
           </div>
@@ -289,59 +301,52 @@ export default function CreatePetForm() {
       </Card>
 
       {/* Health Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Health Information</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Activity className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Health Information</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isVaccinated"
-                {...register('isVaccinated')}
-              />
-              <Label htmlFor="isVaccinated" className="font-normal cursor-pointer">
+              <Checkbox id="isVaccinated" {...register('isVaccinated')} />
+              <Label htmlFor="isVaccinated" className="text-sm font-normal cursor-pointer">
                 Vaccinated
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isNeutered"
-                {...register('isNeutered')}
-              />
-              <Label htmlFor="isNeutered" className="font-normal cursor-pointer">
+              <Checkbox id="isNeutered" {...register('isNeutered')} />
+              <Label htmlFor="isNeutered" className="text-sm font-normal cursor-pointer">
                 Neutered
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isSpayed"
-                {...register('isSpayed')}
-              />
-              <Label htmlFor="isSpayed" className="font-normal cursor-pointer">
+              <Checkbox id="isSpayed" {...register('isSpayed')} />
+              <Label htmlFor="isSpayed" className="text-sm font-normal cursor-pointer">
                 Spayed
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="houseTrained"
-                {...register('houseTrained')}
-              />
-              <Label htmlFor="houseTrained" className="font-normal cursor-pointer">
+              <Checkbox id="houseTrained" {...register('houseTrained')} />
+              <Label htmlFor="houseTrained" className="text-sm font-normal cursor-pointer">
                 House Trained
               </Label>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="healthStatus">Health Status</Label>
+            <Label htmlFor="healthStatus" className="text-sm font-semibold">Health Status</Label>
             <select
               id="healthStatus"
               {...register('healthStatus')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="healthy">Healthy</option>
               <option value="recovering">Recovering</option>
@@ -351,70 +356,65 @@ export default function CreatePetForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="medicalHistory">Medical History</Label>
+            <Label htmlFor="medicalHistory" className="text-sm font-semibold">Medical History</Label>
             <Textarea
               id="medicalHistory"
               {...register('medicalHistory')}
               rows={3}
               placeholder="Any past illnesses, surgeries, or ongoing treatments..."
+              className="border-2"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="specialNeeds">Special Needs</Label>
+            <Label htmlFor="specialNeeds" className="text-sm font-semibold">Special Needs</Label>
             <Textarea
               id="specialNeeds"
               {...register('specialNeeds')}
               rows={2}
               placeholder="Any special care requirements..."
+              className="border-2"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Behavioral Traits */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Behavioral Traits</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Heart className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Behavioral Traits</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="goodWithKids"
-                {...register('goodWithKids')}
-              />
-              <Label htmlFor="goodWithKids" className="font-normal cursor-pointer">
+              <Checkbox id="goodWithKids" {...register('goodWithKids')} />
+              <Label htmlFor="goodWithKids" className="text-sm font-normal cursor-pointer">
                 Good with Kids
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="goodWithPets"
-                {...register('goodWithPets')}
-              />
-              <Label htmlFor="goodWithPets" className="font-normal cursor-pointer">
+              <Checkbox id="goodWithPets" {...register('goodWithPets')} />
+              <Label htmlFor="goodWithPets" className="text-sm font-normal cursor-pointer">
                 Good with Pets
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="goodWithCats"
-                {...register('goodWithCats')}
-              />
-              <Label htmlFor="goodWithCats" className="font-normal cursor-pointer">
+              <Checkbox id="goodWithCats" {...register('goodWithCats')} />
+              <Label htmlFor="goodWithCats" className="text-sm font-normal cursor-pointer">
                 Good with Cats
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="goodWithDogs"
-                {...register('goodWithDogs')}
-              />
-              <Label htmlFor="goodWithDogs" className="font-normal cursor-pointer">
+              <Checkbox id="goodWithDogs" {...register('goodWithDogs')} />
+              <Label htmlFor="goodWithDogs" className="text-sm font-normal cursor-pointer">
                 Good with Dogs
               </Label>
             </div>
@@ -422,11 +422,11 @@ export default function CreatePetForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="energyLevel">Energy Level</Label>
+              <Label htmlFor="energyLevel" className="text-sm font-semibold">Energy Level</Label>
               <select
                 id="energyLevel"
                 {...register('energyLevel')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -435,11 +435,11 @@ export default function CreatePetForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="trainedLevel">Training Level</Label>
+              <Label htmlFor="trainedLevel" className="text-sm font-semibold">Training Level</Label>
               <select
                 id="trainedLevel"
                 {...register('trainedLevel')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="flex h-10 w-full rounded-md border-2 border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="not_trained">Not Trained</option>
                 <option value="basic">Basic Training</option>
@@ -451,96 +451,111 @@ export default function CreatePetForm() {
       </Card>
 
       {/* Description */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Description & Story</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Description & Story</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description" className="text-sm font-semibold">
+              Description <span className="text-destructive">*</span>
+            </Label>
             <Textarea
               id="description"
               {...register('description')}
               rows={5}
               placeholder="Describe the pet's personality, habits, and what makes them special..."
-              className={errors.description ? 'border-red-500' : ''}
+              className={`border-2 ${errors.description ? 'border-destructive' : ''}`}
             />
             {errors.description && (
-              <p className="text-sm text-red-500">{errors.description.message}</p>
+              <p className="text-xs text-destructive">{errors.description.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="story">Pet's Story (Optional)</Label>
+            <Label htmlFor="story" className="text-sm font-semibold">Pet's Story (Optional)</Label>
             <Textarea
               id="story"
               {...register('story')}
               rows={4}
               placeholder="Share the pet's background, how they came to you, etc..."
+              className="border-2"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Adoption Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Adoption Details</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <MapPin className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Adoption Details</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="adoptionFee">Adoption Fee (₹)</Label>
+            <Label htmlFor="adoptionFee" className="text-sm font-semibold">Adoption Fee (₹)</Label>
             <Input
               id="adoptionFee"
               type="number"
               step="0.01"
               {...register('adoptionFee', { valueAsNumber: true })}
+              className="h-10 border-2"
             />
-            <p className="text-sm text-gray-500">Set to 0 for free adoption</p>
+            <p className="text-xs text-muted-foreground">Set to 0 for free adoption</p>
           </div>
 
           <div className="flex items-center space-x-2">
-            <Checkbox
-              id="isUrgent"
-              {...register('isUrgent')}
-            />
-            <Label htmlFor="isUrgent" className="font-normal cursor-pointer">
+            <Checkbox id="isUrgent" {...register('isUrgent')} />
+            <Label htmlFor="isUrgent" className="text-sm font-normal cursor-pointer">
               Mark as Urgent Adoption
             </Label>
           </div>
 
           {watchIsUrgent && (
-            <div className="space-y-2">
-              <Label htmlFor="urgentReason">Urgent Reason *</Label>
+            <div className="space-y-2 p-3 bg-destructive/5 rounded-lg border-2 border-destructive/30">
+              <Label htmlFor="urgentReason" className="text-sm font-semibold">
+                Urgent Reason <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="urgentReason"
                 {...register('urgentReason')}
                 rows={2}
                 placeholder="Explain why this adoption is urgent..."
-                className={errors.urgentReason ? 'border-red-500' : ''}
+                className={`border-2 ${errors.urgentReason ? 'border-destructive' : ''}`}
               />
               {errors.urgentReason && (
-                <p className="text-sm text-red-500">{errors.urgentReason.message}</p>
+                <p className="text-xs text-destructive">{errors.urgentReason.message}</p>
               )}
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city" className="text-sm font-semibold">City</Label>
               <Input
                 id="city"
                 {...register('city')}
                 placeholder={user?.city || 'Mumbai'}
+                className="h-10 border-2"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
+              <Label htmlFor="state" className="text-sm font-semibold">State</Label>
               <Input
                 id="state"
                 {...register('state')}
                 placeholder={user?.state || 'Maharashtra'}
+                className="h-10 border-2"
               />
             </div>
           </div>
@@ -548,35 +563,47 @@ export default function CreatePetForm() {
       </Card>
 
       {/* Images */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pet Images</CardTitle>
+      <Card className="border-2">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <ImageIcon className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-lg">Pet Images</CardTitle>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="images">Upload Images (Max 10)</Label>
+            <Label htmlFor="images" className="text-sm font-semibold">Upload Images (Max 10)</Label>
             <Input
               id="images"
               type="file"
               accept="image/*"
               multiple
               onChange={handleFileSelect}
-              className="mt-2"
+              className="mt-2 h-10 border-2"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               JPG, PNG or WEBP. Max size 10MB per image.
             </p>
           </div>
 
           {previewUrls.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {previewUrls.map((url, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
+                <div key={index} className="relative aspect-square rounded-xl overflow-hidden border-2 border-border group">
                   <img
                     src={url}
                     alt={`Preview ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -584,19 +611,21 @@ export default function CreatePetForm() {
         </CardContent>
       </Card>
 
-      {/* Submit Button */}
-      <div className="flex justify-end space-x-4">
+      {/* Submit Buttons */}
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
         <Button
           type="button"
           variant="outline"
           onClick={() => router.back()}
           disabled={isCreating || isUploading}
+          className="border-2"
         >
           Cancel
         </Button>
         <Button
           type="submit"
           disabled={isCreating || isUploading}
+          className="shadow-lg"
         >
           {isCreating || isUploading ? (
             <>

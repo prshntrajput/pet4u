@@ -37,6 +37,7 @@ const createPetValidation = Joi.object({
     .min(0)
     .max(300)
     .optional()
+    .allow('', null)
     .messages({
       'number.min': 'Age cannot be negative',
       'number.max': 'Please provide a valid age'
@@ -64,6 +65,7 @@ const createPetValidation = Joi.object({
   size: Joi.string()
     .valid('small', 'medium', 'large', 'extra_large')
     .optional()
+    .allow('', null)
     .messages({
       'any.only': 'Please select a valid size'
     }),
@@ -72,6 +74,7 @@ const createPetValidation = Joi.object({
     .min(0)
     .max(200)
     .optional()
+    .allow('', null)
     .messages({
       'number.min': 'Weight cannot be negative',
       'number.max': 'Please provide a valid weight'
@@ -131,20 +134,25 @@ const createPetValidation = Joi.object({
     
   // Behavioral traits
   goodWithKids: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   goodWithPets: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   goodWithCats: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   goodWithDogs: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   energyLevel: Joi.string()
     .valid('low', 'medium', 'high')
     .optional()
+    .allow('', null)
     .messages({
       'any.only': 'Please select a valid energy level'
     }),
@@ -152,6 +160,7 @@ const createPetValidation = Joi.object({
   trainedLevel: Joi.string()
     .valid('not_trained', 'basic', 'advanced')
     .optional()
+    .allow('', null)
     .messages({
       'any.only': 'Please select a valid training level'
     }),
@@ -166,6 +175,7 @@ const createPetValidation = Joi.object({
     .max(100000)
     .optional()
     .default(0)
+    .allow('', null)
     .messages({
       'number.min': 'Adoption fee cannot be negative',
       'number.max': 'Please provide a valid adoption fee'
@@ -253,6 +263,7 @@ const updatePetValidation = Joi.object({
     .min(0)
     .max(300)
     .optional()
+    .allow('', null)
     .messages({
       'number.min': 'Age cannot be negative',
       'number.max': 'Please provide a valid age'
@@ -268,6 +279,7 @@ const updatePetValidation = Joi.object({
   size: Joi.string()
     .valid('small', 'medium', 'large', 'extra_large')
     .optional()
+    .allow('', null)
     .messages({
       'any.only': 'Please select a valid size'
     }),
@@ -276,6 +288,7 @@ const updatePetValidation = Joi.object({
     .min(0)
     .max(200)
     .optional()
+    .allow('', null)
     .messages({
       'number.min': 'Weight cannot be negative',
       'number.max': 'Please provide a valid weight'
@@ -318,24 +331,30 @@ const updatePetValidation = Joi.object({
     .allow('', null),
     
   goodWithKids: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   goodWithPets: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   goodWithCats: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   goodWithDogs: Joi.boolean()
-    .optional(),
+    .optional()
+    .allow(null),
     
   energyLevel: Joi.string()
     .valid('low', 'medium', 'high')
-    .optional(),
+    .optional()
+    .allow('', null),
     
   trainedLevel: Joi.string()
     .valid('not_trained', 'basic', 'advanced')
-    .optional(),
+    .optional()
+    .allow('', null),
     
   houseTrained: Joi.boolean()
     .optional(),
@@ -343,7 +362,8 @@ const updatePetValidation = Joi.object({
   adoptionFee: Joi.number()
     .min(0)
     .max(100000)
-    .optional(),
+    .optional()
+    .allow('', null),
     
   isUrgent: Joi.boolean()
     .optional(),
@@ -376,89 +396,152 @@ const updatePetValidation = Joi.object({
     .max(3000)
     .optional()
     .allow('', null),
-});
+}).min(1); // ✅ At least one field must be provided for update
 
-// Search/Filter validation
+// Search/Filter validation - FIXED FOR EMPTY STRINGS
 const searchPetsValidation = Joi.object({
-  page: Joi.number()
-    .integer()
-    .min(1)
+  page: Joi.alternatives()
+    .try(
+      Joi.number().integer().min(1),
+      Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value))
+    )
     .default(1),
     
-  limit: Joi.number()
-    .integer()
-    .min(1)
-    .max(50)
+  limit: Joi.alternatives()
+    .try(
+      Joi.number().integer().min(1).max(50),
+      Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value))
+    )
     .default(12),
     
   search: Joi.string()
     .max(100)
     .optional()
-    .allow(''),
+    .allow('', null)
+    .default(''),
     
   species: Joi.string()
-    .valid('dog', 'cat', 'bird', 'rabbit', 'hamster', 'other')
-    .optional(),
+    .valid('dog', 'cat', 'bird', 'rabbit', 'hamster', 'other', '')
+    .optional()
+    .allow('', null)
+    .default(''),
     
   gender: Joi.string()
-    .valid('male', 'female')
-    .optional(),
+    .valid('male', 'female', '')
+    .optional()
+    .allow('', null)
+    .default(''),
     
   size: Joi.string()
-    .valid('small', 'medium', 'large', 'extra_large')
-    .optional(),
+    .valid('small', 'medium', 'large', 'extra_large', '')
+    .optional()
+    .allow('', null)
+    .default(''),
     
   city: Joi.string()
     .max(100)
     .optional()
-    .allow(''),
+    .allow('', null)
+    .default(''),
     
   state: Joi.string()
     .max(100)
     .optional()
-    .allow(''),
+    .allow('', null)
+    .default(''),
     
-  minAge: Joi.number()
-    .integer()
-    .min(0)
-    .optional(),
+  minAge: Joi.alternatives()
+    .try(
+      Joi.number().integer().min(0),
+      Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value)),
+      Joi.string().allow('')
+    )
+    .optional()
+    .allow('', null),
     
-  maxAge: Joi.number()
-    .integer()
-    .min(0)
-    .optional(),
+  maxAge: Joi.alternatives()
+    .try(
+      Joi.number().integer().min(0),
+      Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value)),
+      Joi.string().allow('')
+    )
+    .optional()
+    .allow('', null),
     
   ageUnit: Joi.string()
-    .valid('months', 'years')
-    .default('months'),
+    .valid('months', 'years', '')
+    .default('months')
+    .optional()
+    .allow('', null),
     
-  goodWithKids: Joi.boolean()
-    .optional(),
+  goodWithKids: Joi.alternatives()
+    .try(
+      Joi.boolean(),
+      Joi.string().valid('true', 'false', '').custom((value) => {
+        if (value === '') return undefined;
+        return value === 'true';
+      })
+    )
+    .optional()
+    .allow('', null),
     
-  goodWithPets: Joi.boolean()
-    .optional(),
+  goodWithPets: Joi.alternatives()
+    .try(
+      Joi.boolean(),
+      Joi.string().valid('true', 'false', '').custom((value) => {
+        if (value === '') return undefined;
+        return value === 'true';
+      })
+    )
+    .optional()
+    .allow('', null),
     
-  isVaccinated: Joi.boolean()
-    .optional(),
+  isVaccinated: Joi.alternatives()
+    .try(
+      Joi.boolean(),
+      Joi.string().valid('true', 'false', '').custom((value) => {
+        if (value === '') return undefined;
+        return value === 'true';
+      })
+    )
+    .optional()
+    .allow('', null),
     
-  isNeutered: Joi.boolean()
-    .optional(),
+  isNeutered: Joi.alternatives()
+    .try(
+      Joi.boolean(),
+      Joi.string().valid('true', 'false', '').custom((value) => {
+        if (value === '') return undefined;
+        return value === 'true';
+      })
+    )
+    .optional()
+    .allow('', null),
     
   energyLevel: Joi.string()
-    .valid('low', 'medium', 'high')
-    .optional(),
+    .valid('low', 'medium', 'high', '')
+    .optional()
+    .allow('', null)
+    .default(''),
     
   adoptionStatus: Joi.string()
-    .valid('available', 'pending', 'adopted')
-    .default('available'),
+    .valid('available', 'pending', 'adopted', '')
+    .default('available')
+    .optional()
+    .allow('', null),
     
   sortBy: Joi.string()
-    .valid('createdAt', 'name', 'age', 'adoptionFee')
-    .default('createdAt'),
+    .valid('createdAt', 'name', 'age', 'adoptionFee', 'viewCount')
+    .default('createdAt')
+    .optional(),
     
   order: Joi.string()
     .valid('asc', 'desc')
-    .default('desc'),
+    .default('desc')
+    .optional(),
+}).options({ 
+  stripUnknown: true, 
+  allowUnknown: false 
 });
 
 module.exports = {

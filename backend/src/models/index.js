@@ -2,6 +2,7 @@ const userModels = require('./users');
 const petModels = require('./pets');
 const adoptionModels = require('./adoptionRequests');
 const reviewModels = require('./reviews');
+const paymentModels = require('./payment');
 
 module.exports = {
   // User models
@@ -28,4 +29,8 @@ module.exports = {
   shelterReviews: reviewModels.shelterReviews,
   adminLogs: reviewModels.adminLogs,
   statistics: reviewModels.statistics,
+  
+  // Payment models
+  payments: paymentModels.payments,
+  refunds: paymentModels.refunds,
 };

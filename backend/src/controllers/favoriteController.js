@@ -78,10 +78,16 @@ const favoriteController = {
       });
 
     } catch (error) {
-      logger.error('Add favorite error:', { error: error.message, userId, requestId });
+      logger.error('Add favorite error:', { 
+        error: error.message, 
+        stack: error.stack,
+        userId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to add pet to favorites',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
@@ -129,10 +135,16 @@ const favoriteController = {
       });
 
     } catch (error) {
-      logger.error('Remove favorite error:', { error: error.message, userId, requestId });
+      logger.error('Remove favorite error:', { 
+        error: error.message,
+        stack: error.stack,
+        userId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to remove pet from favorites',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
@@ -198,10 +210,55 @@ const favoriteController = {
       });
 
     } catch (error) {
-      logger.error('Get favorites error:', { error: error.message, userId, requestId });
+      logger.error('Get favorites error:', { 
+        error: error.message,
+        stack: error.stack,
+        userId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch favorites',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        requestId
+      });
+    }
+  },
+
+  // ✅ Get favorited pet IDs only (lightweight for checks)
+  getFavoritedPetIds: async (req, res) => {
+    const requestId = req.requestId;
+    const userId = req.user.userId;
+
+    try {
+      const favoritedPets = await db
+        .select({ petId: petFavorites.petId })
+        .from(petFavorites)
+        .where(eq(petFavorites.userId, userId));
+
+      const petIds = favoritedPets.map(f => f.petId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Favorited pet IDs fetched successfully',
+        data: {
+          petIds,
+          count: petIds.length
+        },
+        requestId
+      });
+
+    } catch (error) {
+      logger.error('Get favorited pet IDs error:', { 
+        error: error.message,
+        stack: error.stack,
+        userId, 
+        requestId 
+      });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch favorited pet IDs',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
@@ -233,10 +290,16 @@ const favoriteController = {
       });
 
     } catch (error) {
-      logger.error('Check favorite error:', { error: error.message, userId, requestId });
+      logger.error('Check favorite error:', { 
+        error: error.message,
+        stack: error.stack,
+        userId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to check favorite status',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }

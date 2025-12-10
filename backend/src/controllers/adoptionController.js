@@ -2,7 +2,7 @@ const { createId } = require('@paralleldrive/cuid2');
 const { db } = require('../config/database');
 const { adoptionRequests, pets, users, notifications } = require('../models');
 const { logger } = require('../config/logger');
-const emailService = require('../services/emailServices'); // ✅ Added
+const emailService = require('../services/emailServices');
 const { eq, and, or, desc, sql } = require('drizzle-orm');
 const { emitToUser } = require('../config/socket');
 
@@ -113,7 +113,7 @@ const adoptionController = {
         logger.warn('Failed to emit notification socket event:', socketError);
       }
 
-      // ✅ Send email notification to shelter
+      // Send email notification to shelter
       try {
         const shelterInfo = await db
           .select()
@@ -140,7 +140,6 @@ const adoptionController = {
         }
       } catch (emailError) {
         logger.warn('Failed to send adoption request email:', emailError);
-        // Don't fail the request if email fails
       }
 
       logger.info('Adoption request created successfully', {
@@ -160,16 +159,22 @@ const adoptionController = {
       });
 
     } catch (error) {
-      logger.error('Create adoption request error:', { error: error.message, adopterId, requestId });
+      logger.error('Create adoption request error:', { 
+        error: error.message, 
+        stack: error.stack,
+        adopterId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to create adoption request',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
   },
 
-  // Get my adoption requests (as adopter)
+  // ✅ FIXED: Get my adoption requests (as adopter)
   getMyAdoptionRequests: async (req, res) => {
     const requestId = req.requestId;
     const adopterId = req.user.userId;
@@ -186,19 +191,47 @@ const adoptionController = {
 
       const whereClause = and(...conditions);
 
-      // Get requests with pet and shelter details
+      // ✅ Get requests with complete pet and shelter details
       const requests = await db
         .select({
-          request: adoptionRequests,
-          pet: pets,
-          shelter: {
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            profileImage: users.profileImage,
-            city: users.city,
-            state: users.state,
-          }
+          // Request fields
+          id: adoptionRequests.id,
+          petId: adoptionRequests.petId,
+          adopterId: adoptionRequests.adopterId,
+          shelterId: adoptionRequests.shelterId,
+          status: adoptionRequests.status,
+          message: adoptionRequests.message,
+          responseMessage: adoptionRequests.responseMessage,
+          meetingScheduled: adoptionRequests.meetingScheduled,
+          meetingDate: adoptionRequests.meetingDate,
+          meetingLocation: adoptionRequests.meetingLocation,
+          meetingNotes: adoptionRequests.meetingNotes,
+          createdAt: adoptionRequests.createdAt,
+          updatedAt: adoptionRequests.updatedAt,
+          respondedAt: adoptionRequests.respondedAt,
+          // Pet fields
+          petName: pets.name,
+          petSpecies: pets.species,
+          petBreed: pets.breed,
+          petAge: pets.age,
+          petAgeUnit: pets.ageUnit,
+          petGender: pets.gender,
+          petSize: pets.size,
+          petPrimaryImage: pets.primaryImage,
+          petCity: pets.city,
+          petState: pets.state,
+          petAdoptionFee: pets.adoptionFee,
+          petAdoptionStatus: pets.adoptionStatus,
+          petDescription: pets.description,
+          // Shelter fields
+          shelterId: users.id,
+          shelterName: users.name,
+          shelterEmail: users.email,
+          shelterRole: users.role,
+          shelterProfileImage: users.profileImage,
+          shelterCity: users.city,
+          shelterState: users.state,
+          shelterPhone: users.phone,
         })
         .from(adoptionRequests)
         .innerJoin(pets, eq(adoptionRequests.petId, pets.id))
@@ -217,15 +250,62 @@ const adoptionController = {
       const totalCount = parseInt(countResult[0].count);
       const totalPages = Math.ceil(totalCount / parseInt(limit));
 
+      // ✅ Transform data to match frontend structure
+      const formattedRequests = requests.map(req => ({
+        id: req.id,
+        petId: req.petId,
+        adopterId: req.adopterId,
+        shelterId: req.shelterId,
+        status: req.status,
+        message: req.message,
+        responseMessage: req.responseMessage,
+        meetingScheduled: req.meetingScheduled,
+        meetingDate: req.meetingDate,
+        meetingLocation: req.meetingLocation,
+        meetingNotes: req.meetingNotes,
+        createdAt: req.createdAt,
+        updatedAt: req.updatedAt,
+        respondedAt: req.respondedAt,
+        pet: {
+          id: req.petId,
+          name: req.petName,
+          species: req.petSpecies,
+          breed: req.petBreed,
+          age: req.petAge,
+          ageUnit: req.petAgeUnit,
+          gender: req.petGender,
+          size: req.petSize,
+          primaryImage: req.petPrimaryImage,
+          city: req.petCity,
+          state: req.petState,
+          adoptionFee: req.petAdoptionFee,
+          adoptionStatus: req.petAdoptionStatus,
+          description: req.petDescription,
+        },
+        shelter: {
+          id: req.shelterId,
+          name: req.shelterName,
+          email: req.shelterEmail,
+          role: req.shelterRole,
+          profileImage: req.shelterProfileImage,
+          city: req.shelterCity,
+          state: req.shelterState,
+          phone: req.shelterPhone,
+        }
+      }));
+
+      logger.info('My adoption requests fetched successfully', {
+        adopterId,
+        count: requests.length,
+        totalCount,
+        requestId
+      });
+
       res.status(200).json({
         success: true,
         message: 'Adoption requests fetched successfully',
         data: {
-          requests: requests.map(r => ({
-            ...r.request,
-            pet: r.pet,
-            shelter: r.shelter
-          })),
+          requests: formattedRequests,
           pagination: {
             currentPage: parseInt(page),
             totalPages,
@@ -239,16 +319,22 @@ const adoptionController = {
       });
 
     } catch (error) {
-      logger.error('Get my adoption requests error:', { error: error.message, adopterId, requestId });
+      logger.error('Get my adoption requests error:', { 
+        error: error.message,
+        stack: error.stack,
+        adopterId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch adoption requests',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
   },
 
-  // Get received adoption requests (as shelter)
+  // ✅ FIXED: Get received adoption requests (as shelter)
   getReceivedAdoptionRequests: async (req, res) => {
     const requestId = req.requestId;
     const shelterId = req.user.userId;
@@ -265,20 +351,45 @@ const adoptionController = {
 
       const whereClause = and(...conditions);
 
-      // Get requests with pet and adopter details
+      // ✅ Get requests with complete pet and adopter details
       const requests = await db
         .select({
-          request: adoptionRequests,
-          pet: pets,
-          adopter: {
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            profileImage: users.profileImage,
-            city: users.city,
-            state: users.state,
-            phone: users.phone,
-          }
+          // Request fields
+          id: adoptionRequests.id,
+          petId: adoptionRequests.petId,
+          adopterId: adoptionRequests.adopterId,
+          shelterId: adoptionRequests.shelterId,
+          status: adoptionRequests.status,
+          message: adoptionRequests.message,
+          responseMessage: adoptionRequests.responseMessage,
+          meetingScheduled: adoptionRequests.meetingScheduled,
+          meetingDate: adoptionRequests.meetingDate,
+          meetingLocation: adoptionRequests.meetingLocation,
+          meetingNotes: adoptionRequests.meetingNotes,
+          createdAt: adoptionRequests.createdAt,
+          updatedAt: adoptionRequests.updatedAt,
+          respondedAt: adoptionRequests.respondedAt,
+          // Pet fields
+          petName: pets.name,
+          petSpecies: pets.species,
+          petBreed: pets.breed,
+          petAge: pets.age,
+          petAgeUnit: pets.ageUnit,
+          petGender: pets.gender,
+          petSize: pets.size,
+          petPrimaryImage: pets.primaryImage,
+          petCity: pets.city,
+          petState: pets.state,
+          petAdoptionFee: pets.adoptionFee,
+          petAdoptionStatus: pets.adoptionStatus,
+          petDescription: pets.description,
+          // Adopter fields
+          adopterName: users.name,
+          adopterEmail: users.email,
+          adopterPhone: users.phone,
+          adopterCity: users.city,
+          adopterState: users.state,
+          adopterProfileImage: users.profileImage,
         })
         .from(adoptionRequests)
         .innerJoin(pets, eq(adoptionRequests.petId, pets.id))
@@ -297,15 +408,61 @@ const adoptionController = {
       const totalCount = parseInt(countResult[0].count);
       const totalPages = Math.ceil(totalCount / parseInt(limit));
 
+      // ✅ Transform data
+      const formattedRequests = requests.map(req => ({
+        id: req.id,
+        petId: req.petId,
+        adopterId: req.adopterId,
+        shelterId: req.shelterId,
+        status: req.status,
+        message: req.message,
+        responseMessage: req.responseMessage,
+        meetingScheduled: req.meetingScheduled,
+        meetingDate: req.meetingDate,
+        meetingLocation: req.meetingLocation,
+        meetingNotes: req.meetingNotes,
+        createdAt: req.createdAt,
+        updatedAt: req.updatedAt,
+        respondedAt: req.respondedAt,
+        pet: {
+          id: req.petId,
+          name: req.petName,
+          species: req.petSpecies,
+          breed: req.petBreed,
+          age: req.petAge,
+          ageUnit: req.petAgeUnit,
+          gender: req.petGender,
+          size: req.petSize,
+          primaryImage: req.petPrimaryImage,
+          city: req.petCity,
+          state: req.petState,
+          adoptionFee: req.petAdoptionFee,
+          adoptionStatus: req.petAdoptionStatus,
+          description: req.petDescription,
+        },
+        adopter: {
+          id: req.adopterId,
+          name: req.adopterName,
+          email: req.adopterEmail,
+          phone: req.adopterPhone,
+          city: req.adopterCity,
+          state: req.adopterState,
+          profileImage: req.adopterProfileImage,
+        }
+      }));
+
+      logger.info('Received adoption requests fetched successfully', {
+        shelterId,
+        count: requests.length,
+        totalCount,
+        requestId
+      });
+
       res.status(200).json({
         success: true,
         message: 'Received adoption requests fetched successfully',
         data: {
-          requests: requests.map(r => ({
-            ...r.request,
-            pet: r.pet,
-            adopter: r.adopter
-          })),
+          requests: formattedRequests,
           pagination: {
             currentPage: parseInt(page),
             totalPages,
@@ -319,10 +476,16 @@ const adoptionController = {
       });
 
     } catch (error) {
-      logger.error('Get received adoption requests error:', { error: error.message, shelterId, requestId });
+      logger.error('Get received adoption requests error:', { 
+        error: error.message,
+        stack: error.stack,
+        shelterId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch adoption requests',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
@@ -336,6 +499,15 @@ const adoptionController = {
 
     try {
       const { status, responseMessage, meetingDate, meetingLocation, meetingNotes } = req.body;
+
+      // Validate status
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Status must be either approved or rejected',
+          requestId
+        });
+      }
 
       // Get request
       const existingRequest = await db
@@ -421,7 +593,7 @@ const adoptionController = {
         logger.warn('Failed to emit notification socket event:', socketError);
       }
 
-      // ✅ Send email notification if approved
+      // Send email notification if approved
       if (status === 'approved') {
         try {
           const adopterInfo = await db
@@ -456,7 +628,6 @@ const adoptionController = {
           }
         } catch (emailError) {
           logger.warn('Failed to send approval email:', emailError);
-          // Don't fail the request if email fails
         }
       }
 
@@ -477,10 +648,16 @@ const adoptionController = {
       });
 
     } catch (error) {
-      logger.error('Respond to adoption request error:', { error: error.message, shelterId, requestId });
+      logger.error('Respond to adoption request error:', { 
+        error: error.message,
+        stack: error.stack,
+        shelterId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to respond to adoption request',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
@@ -543,10 +720,16 @@ const adoptionController = {
       });
 
     } catch (error) {
-      logger.error('Withdraw adoption request error:', { error: error.message, adopterId, requestId });
+      logger.error('Withdraw adoption request error:', { 
+        error: error.message,
+        stack: error.stack,
+        adopterId, 
+        requestId 
+      });
       res.status(500).json({
         success: false,
         message: 'Failed to withdraw adoption request',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         requestId
       });
     }
