@@ -67,33 +67,33 @@ export default function DashboardLayout({ children }) {
 
   // Navigation items based on role
   const getNavItems = () => {
-    const baseItems = [
-      { href: '/dashboard', icon: Home, label: 'Home', show: true },
-      { href: '/pets', icon: Search, label: 'Browse', show: true },
-    ];
+    const homeItem   = { href: '/dashboard', icon: Home,   label: 'Home',   show: true };
+    const browseItem = { href: '/pets',       icon: Search, label: 'Browse', show: true };
 
     if (user?.role === 'shelter') {
       return [
-        ...baseItems,
-        { href: '/my-pets', icon: List, label: 'My Pets', show: true },
-        { href: '/pets/create', icon: Plus, label: 'Add Pet', show: true, hideOnMobile: true },
-        { href: '/adoption-requests', icon: Inbox, label: 'Requests', show: true },
+        homeItem,
+        { href: '/my-pets',           icon: List,  label: 'My Pets',  show: true },
+        { href: '/pets/create',        icon: Plus,  label: 'Add Pet',  show: true, hideOnMobile: true },
+        { href: '/adoption-requests',  icon: Inbox, label: 'Requests', show: true },
       ];
     } else if (user?.role === 'adopter') {
       return [
-        ...baseItems,
-        { href: '/favorites', icon: Heart, label: 'Favorites', show: true },
-        { href: '/my-requests', icon: FileText, label: 'Requests', show: true },
+        homeItem,
+        browseItem,
+        { href: '/favorites',   icon: Heart,     label: 'Favorites', show: true },
+        { href: '/my-requests', icon: FileText,   label: 'Requests',  show: true },
       ];
     } else if (user?.role === 'admin') {
       return [
-        ...baseItems,
-        { href: '/admin', icon: Shield, label: 'Admin', show: true },
+        homeItem,
+        browseItem,
+        { href: '/admin',     icon: Shield,    label: 'Admin',     show: true },
         { href: '/analytics', icon: TrendingUp, label: 'Analytics', show: true },
       ];
     }
 
-    return baseItems;
+    return [homeItem, browseItem];
   };
 
   const navItems = getNavItems();

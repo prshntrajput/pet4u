@@ -10,9 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { messageAPI } from '@/lib/api/messages';
 
 export default function ChatPage() {
   const params = useParams();
@@ -24,6 +25,8 @@ export default function ChatPage() {
   const [message, setMessage] = useState('');
   const [otherUser, setOtherUser] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [canMessage, setCanMessage] = useState(null); // null = checking
+  const [lockReason, setLockReason] = useState('');
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -31,6 +34,14 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (otherUserId) {
+      // Check messaging permission first
+      messageAPI.canMessage(otherUserId)
+        .then((res) => {
+          setCanMessage(res.data.canMessage);
+          if (!res.data.canMessage) setLockReason(res.data.reason || '');
+        })
+        .catch(() => setCanMessage(false));
+
       dispatch(fetchConversation({ otherUserId }))
         .unwrap()
         .then((data) => {
@@ -42,7 +53,7 @@ export default function ChatPage() {
             }
           }
         })
-        .catch((error) => {
+        .catch(() => {
           toast.error('Failed to load conversation');
         });
 
@@ -213,31 +224,40 @@ export default function ChatPage() {
 
           {/* Message Input - Fixed at Bottom */}
           <div className="border-t p-3 bg-card">
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-              <Input
-                type="text"
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value);
-                  handleTyping();
-                }}
-                disabled={isSending}
-                className="flex-1 h-10 border-2"
-              />
-              <Button
-                type="submit"
-                disabled={isSending || !message.trim()}
-                size="icon"
-                className="h-10 w-10 rounded-full"
-              >
-                {isSending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
+            {canMessage === false ? (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 text-muted-foreground">
+                <Lock className="h-4 w-4 flex-shrink-0" />
+                <p className="text-sm">
+                  {lockReason || 'Messaging is locked until the adoption request is approved.'}
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={message}
+                  onChange={(e) => {
+                    setMessage(e.target.value);
+                    handleTyping();
+                  }}
+                  disabled={isSending || canMessage === null}
+                  className="flex-1 h-10 border-2"
+                />
+                <Button
+                  type="submit"
+                  disabled={isSending || !message.trim() || canMessage === null}
+                  size="icon"
+                  className="h-10 w-10 rounded-full"
+                >
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
+            )}
           </div>
         </CardContent>
       </Card>

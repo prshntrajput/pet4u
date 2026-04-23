@@ -42,4 +42,9 @@ router.get('/unread/count',
   messageController.getUnreadCount
 );
 
+// Check if current user can message another user
+router.get('/can-message/:otherUserId',
+  messageController.canMessage
+);
+
 module.exports = router;

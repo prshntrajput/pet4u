@@ -69,4 +69,15 @@ export const messageAPI = {
       throw error;
     }
   },
+
+  // Check if current user can message another user
+  canMessage: async (otherUserId) => {
+    try {
+      const response = await apiWrapper.get(`/messages/can-message/${otherUserId}`);
+      return response;
+    } catch (error) {
+      console.error('Can message check API error:', error);
+      throw error;
+    }
+  },
 };

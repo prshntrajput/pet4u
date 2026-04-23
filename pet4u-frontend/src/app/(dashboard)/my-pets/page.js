@@ -6,41 +6,40 @@ import { useRouter } from 'next/navigation';
 import { petAPI } from '@/lib/api/pets';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Loader2, Edit, Trash2, Eye, AlertCircle, Heart, PawPrint, Sparkles } from 'lucide-react';
+import { Plus, Loader2, Edit, Trash2, Eye, AlertCircle, Heart, PawPrint, IndianRupee } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
+
+const statusStyle = {
+  available: 'bg-emerald-100 text-emerald-700',
+  pending:   'bg-amber-100  text-amber-700',
+  adopted:   'bg-blue-100   text-blue-700',
+};
 
 export default function MyPetsPage() {
   const { user } = useAuth({ requireAuth: true });
   const router = useRouter();
-  
+
   const [allPets, setAllPets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('available');
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    if (user?.role === 'shelter') {
-      loadMyPets();
-    }
+    if (user?.role === 'shelter') loadMyPets();
   }, [user?.role]);
 
   const loadMyPets = async () => {
     setIsLoading(true);
     try {
       const response = await petAPI.getMyPets();
-      
       if (response.success) {
-        const petsData = response.data?.data?.pets || response.data?.pets || [];
-        setAllPets(petsData);
+        setAllPets(response.data?.data?.pets || response.data?.pets || []);
       } else {
         throw new Error(response.error || 'Failed to load pets');
       }
     } catch (error) {
-      console.error('Load pets error:', error);
       toast.error(error.message || 'Failed to load pets');
       setAllPets([]);
     } finally {
@@ -48,34 +47,32 @@ export default function MyPetsPage() {
     }
   };
 
-  const filteredPets = allPets.filter(pet => pet.adoptionStatus === activeTab);
-
   const handleDelete = async (petId) => {
-    if (!confirm('Are you sure you want to delete this pet listing? This action cannot be undone.')) {
-      return;
-    }
-
+    if (!confirm('Delete this listing? This cannot be undone.')) return;
     setDeletingId(petId);
     try {
       const response = await petAPI.deletePet(petId);
       if (response.success) {
-        toast.success('Pet listing deleted successfully');
-        setAllPets(prevPets => prevPets.filter(pet => pet.id !== petId));
+        toast.success('Pet listing deleted');
+        setAllPets(prev => prev.filter(p => p.id !== petId));
       } else {
         throw new Error(response.error || 'Failed to delete pet');
       }
     } catch (error) {
-      console.error('Delete error:', error);
-      toast.error(error.message || 'An error occurred while deleting');
+      toast.error(error.message || 'An error occurred');
     } finally {
       setDeletingId(null);
     }
   };
 
+  const filteredPets = allPets.filter(p => p.adoptionStatus === activeTab);
+
+  const tabCount = (status) => allPets.filter(p => p.adoptionStatus === status).length;
+
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -83,210 +80,165 @@ export default function MyPetsPage() {
   if (user.role !== 'shelter') {
     return (
       <div className="text-center py-20">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-destructive/10 mb-6">
-          <AlertCircle className="h-10 w-10 text-destructive" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+          <AlertCircle className="h-8 w-8 text-destructive" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-          This page is only accessible to shelter accounts.
-        </p>
-        <Button onClick={() => router.push('/pets')} size="lg" className="shadow-lg">
-          Browse Available Pets
-        </Button>
+        <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+        <p className="text-muted-foreground mb-6 text-sm">This page is only for shelter accounts.</p>
+        <Button onClick={() => router.push('/pets')} size="sm">Browse Pets</Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="inline-flex p-2 rounded-xl bg-primary/10 border-2 border-primary/20">
-              <PawPrint className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-xl bg-primary/10">
+              <PawPrint className="h-5 w-5 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold">My Pet Listings</h1>
+            <h1 className="text-2xl font-bold">My Pet Listings</h1>
           </div>
-          <p className="text-muted-foreground ml-14">
-            Manage your pet listings and adoption requests
-          </p>
+          <p className="text-sm text-muted-foreground ml-9">Manage your listings and track adoption requests</p>
         </div>
         <Link href="/pets/create">
-          <Button size="lg" className="shadow-lg">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="sm" className="shadow-md">
+            <Plus className="mr-1.5 h-4 w-4" />
             Add New Pet
           </Button>
         </Link>
       </div>
 
-      {/* Status Tabs */}
+      {/* Summary strip */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Available', count: tabCount('available'), color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+          { label: 'Pending',   count: tabCount('pending'),   color: 'bg-amber-50  text-amber-700  border-amber-200'  },
+          { label: 'Adopted',   count: tabCount('adopted'),   color: 'bg-blue-50   text-blue-700   border-blue-200'   },
+        ].map(s => (
+          <button
+            key={s.label}
+            onClick={() => setActiveTab(s.label.toLowerCase())}
+            className={`rounded-2xl border p-3 text-center transition-all hover:shadow-md ${s.color} ${activeTab === s.label.toLowerCase() ? 'shadow-md ring-2 ring-offset-1 ring-current/30' : ''}`}
+          >
+            <div className="text-2xl font-bold">{s.count}</div>
+            <div className="text-xs font-semibold mt-0.5">{s.label}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 h-11">
-          <TabsTrigger value="available" className="text-sm">
-            Available ({allPets.filter(p => p.adoptionStatus === 'available').length})
-          </TabsTrigger>
-          <TabsTrigger value="pending" className="text-sm">
-            Pending ({allPets.filter(p => p.adoptionStatus === 'pending').length})
-          </TabsTrigger>
-          <TabsTrigger value="adopted" className="text-sm">
-            Adopted ({allPets.filter(p => p.adoptionStatus === 'adopted').length})
-          </TabsTrigger>
+        <TabsList className="h-9 w-full grid grid-cols-3">
+          <TabsTrigger value="available" className="text-xs">Available ({tabCount('available')})</TabsTrigger>
+          <TabsTrigger value="pending"   className="text-xs">Pending ({tabCount('pending')})</TabsTrigger>
+          <TabsTrigger value="adopted"   className="text-xs">Adopted ({tabCount('adopted')})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="mt-6">
+        <TabsContent value={activeTab} className="mt-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           ) : filteredPets.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 animate-ping">
-                    <PawPrint className="h-24 w-24 text-primary/20" />
-                  </div>
-                  <PawPrint className="h-24 w-24 text-muted-foreground relative" />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold mb-2">
-                No {activeTab} pets
-              </h3>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                {activeTab === 'available' 
-                  ? 'Create your first pet listing to get started'
-                  : `You don't have any ${activeTab} pets yet`
-                }
+            <div className="text-center py-16">
+              <div className="text-5xl mb-3">🐾</div>
+              <h3 className="text-lg font-bold mb-1">No {activeTab} pets</h3>
+              <p className="text-sm text-muted-foreground mb-5">
+                {activeTab === 'available' ? 'Create your first pet listing to get started' : `No ${activeTab} pets yet`}
               </p>
               {activeTab === 'available' && (
                 <Link href="/pets/create">
-                  <Button size="lg" className="shadow-lg">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Pet Listing
-                  </Button>
+                  <Button size="sm"><Plus className="mr-1.5 h-3.5 w-3.5" />Create Listing</Button>
                 </Link>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {filteredPets.map((pet) => (
-                <Card key={pet.id} className="overflow-hidden border-2 hover:border-primary/50 hover:shadow-xl transition-all">
-                  {/* Pet Image */}
-                  <div className="relative aspect-square bg-muted">
+                <div key={pet.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 flex flex-col">
+                  {/* Image */}
+                  <div className="relative aspect-[4/3] bg-blue-50 overflow-hidden flex-shrink-0">
                     {pet.primaryImage ? (
                       <Image
                         src={pet.primaryImage}
                         alt={pet.name || 'Pet'}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-6xl">
-                        🐾
-                      </div>
+                      <div className="flex items-center justify-center h-full text-3xl">🐾</div>
                     )}
-                    
-                    {/* Status Badge */}
-                    <div className="absolute top-2 right-2">
-                      <Badge
-                        variant={
-                          pet.adoptionStatus === 'available' ? 'default' :
-                          pet.adoptionStatus === 'pending' ? 'secondary' :
-                          pet.adoptionStatus === 'adopted' ? 'outline' :
-                          'outline'
-                        }
-                        className="capitalize shadow-md"
-                      >
-                        {pet.adoptionStatus || 'Unknown'}
-                      </Badge>
-                    </div>
+
+                    {/* Status chip */}
+                    <span className={`absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${statusStyle[pet.adoptionStatus] || 'bg-gray-100 text-gray-600'}`}>
+                      {pet.adoptionStatus}
+                    </span>
 
                     {pet.isUrgent && (
-                      <div className="absolute top-2 left-2">
-                        <Badge variant="destructive" className="flex items-center gap-1 shadow-md">
-                          <AlertCircle className="h-3 w-3" />
-                          Urgent
-                        </Badge>
-                      </div>
+                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">
+                        Urgent
+                      </span>
                     )}
                   </div>
 
-                  {/* Pet Info */}
-                  <CardContent className="p-4 space-y-3">
+                  {/* Info */}
+                  <div className="p-2.5 flex flex-col gap-1.5 flex-1">
                     <div>
-                      <h3 className="text-lg font-semibold truncate">
-                        {pet.name || 'Unnamed Pet'}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {pet.breed || pet.species || 'Unknown breed'}
-                      </p>
+                      <h3 className="font-bold text-sm leading-tight truncate">{pet.name || 'Unnamed'}</h3>
+                      <p className="text-[11px] text-gray-400 truncate">{pet.breed || pet.species}</p>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>
-                        {pet.age || '?'} {pet.ageUnit || 'years'} • {pet.gender || 'Unknown'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3.5 w-3.5" />
-                        {pet.viewCount || 0}
+                    <div className="flex gap-1 flex-wrap">
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-pink-100 text-pink-600 capitalize">{pet.gender || '?'}</span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-600">
+                        {pet.age ? `${pet.age}${pet.ageUnit === 'years' ? 'yr' : 'mo'}` : '?'}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-3 w-3" />
-                        {pet.inquiryCount || 0} inquiries
-                      </span>
-                      {pet.adoptionFee > 0 && (
-                        <span className="font-semibold text-primary">
-                          ₹{pet.adoptionFee}
-                        </span>
+                    <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-100">
+                      <span className="flex items-center gap-0.5"><Eye size={9}/> {pet.viewCount || 0}</span>
+                      <span className="flex items-center gap-0.5"><Heart size={9}/> {pet.inquiryCount || 0}</span>
+                      {pet.adoptionFee > 0 ? (
+                        <span className="flex items-center font-bold text-primary"><IndianRupee size={9}/>{pet.adoptionFee}</span>
+                      ) : (
+                        <span className="text-emerald-500 font-bold">Free</span>
                       )}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="grid grid-cols-3 gap-2 pt-2">
-                      <Link href={`/pets/${pet.slug || pet.id}`}>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full h-9 border-2"
-                          title="View"
-                        >
-                          <Eye className="h-4 w-4" />
+                    {/* Actions */}
+                    <div className="flex gap-1 pt-1">
+                      <Link href={`/pets/${pet.slug || pet.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full h-7 text-[11px] px-0">
+                          <Eye className="h-3 w-3" />
                         </Button>
                       </Link>
-                      
-                      <Link href={`/pets/edit/${pet.id}`}>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full h-9 border-2"
-                          title="Edit"
+                      <Link href={`/pets/edit/${pet.id}`} className="flex-1">
+                        <Button
+                          variant="outline" size="sm"
+                          className="w-full h-7 text-[11px] px-0"
                           disabled={pet.adoptionStatus === 'adopted'}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3" />
                         </Button>
                       </Link>
-                      
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="outline" size="sm"
+                        className="flex-1 h-7 text-[11px] px-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => handleDelete(pet.id)}
                         disabled={deletingId === pet.id || pet.adoptionStatus === 'adopted'}
-                        className="h-9 border-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        title="Delete"
                       >
-                        {deletingId === pet.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
+                        {deletingId === pet.id
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Trash2 className="h-3 w-3" />
+                        }
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}

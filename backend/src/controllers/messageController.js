@@ -1,9 +1,55 @@
 const { createId } = require('@paralleldrive/cuid2');
 const { db } = require('../config/database');
-const { messages, conversations, users, notifications } = require('../models');
+const { messages, conversations, users, notifications, adoptionRequests } = require('../models');
 const { logger } = require('../config/logger');
-const { eq, and, or, desc, sql, ne } = require('drizzle-orm');
+const { eq, and, or, desc, sql } = require('drizzle-orm');
 const { emitToUser, emitToConversation } = require('../config/socket');
+
+// Returns { allowed, reason } — enforces that adopter↔shelter messaging
+// requires an approved adoption request between them.
+async function checkMessagePermission(senderId, receiverId) {
+  const [senderUser, receiverUser] = await Promise.all([
+    db.select({ role: users.role }).from(users).where(eq(users.id, senderId)).limit(1),
+    db.select({ role: users.role }).from(users).where(eq(users.id, receiverId)).limit(1),
+  ]);
+
+  if (!senderUser.length || !receiverUser.length) {
+    return { allowed: false, reason: 'User not found' };
+  }
+
+  const senderRole = senderUser[0].role;
+  const receiverRole = receiverUser[0].role;
+
+  const isAdopterShelterPair =
+    (senderRole === 'adopter' && receiverRole === 'shelter') ||
+    (senderRole === 'shelter' && receiverRole === 'adopter');
+
+  if (!isAdopterShelterPair) {
+    return { allowed: true };
+  }
+
+  const adopterId = senderRole === 'adopter' ? senderId : receiverId;
+  const shelterId = senderRole === 'shelter' ? senderId : receiverId;
+
+  const approvedRequest = await db
+    .select({ id: adoptionRequests.id })
+    .from(adoptionRequests)
+    .where(and(
+      eq(adoptionRequests.adopterId, adopterId),
+      eq(adoptionRequests.shelterId, shelterId),
+      eq(adoptionRequests.status, 'approved')
+    ))
+    .limit(1);
+
+  if (approvedRequest.length === 0) {
+    return {
+      allowed: false,
+      reason: 'Messaging is only available after an adoption request has been approved',
+    };
+  }
+
+  return { allowed: true };
+}
 
 const messageController = {
   // Send message
@@ -37,6 +83,16 @@ const messageController = {
         return res.status(400).json({
           success: false,
           message: 'You cannot send a message to yourself',
+          requestId
+        });
+      }
+
+      // Require an approved adoption request for adopter↔shelter messaging
+      const permission = await checkMessagePermission(senderId, receiverId);
+      if (!permission.allowed) {
+        return res.status(403).json({
+          success: false,
+          message: permission.reason,
           requestId
         });
       }
@@ -408,6 +464,29 @@ const messageController = {
         success: false,
         message: 'Failed to delete message',
         requestId
+      });
+    }
+  },
+
+  // Check if current user is allowed to message another user
+  canMessage: async (req, res) => {
+    const requestId = req.requestId;
+    const senderId = req.user.userId;
+    const { otherUserId } = req.params;
+
+    try {
+      const permission = await checkMessagePermission(senderId, otherUserId);
+      res.status(200).json({
+        success: true,
+        data: { canMessage: permission.allowed, reason: permission.reason || null },
+        requestId,
+      });
+    } catch (error) {
+      logger.error('Can message check error:', { error: error.message, senderId, requestId });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check messaging permission',
+        requestId,
       });
     }
   },

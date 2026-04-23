@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
       <body className={instrumentSerif.className}>
         <ThemeProvider 
         attribute="class"
-        defaultTheme="dark"
+        defaultTheme="light"
         enableSytem
         disableTransitionOnChange
         >
