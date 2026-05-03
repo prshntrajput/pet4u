@@ -11,24 +11,26 @@ const analyticsController = {
     try {
       const { dateRange = 30 } = req.query;
 
-      // Check cache
       const redis = getRedisClient();
       const cacheKey = `analytics:shelter:${shelterId}:${dateRange}`;
-      const cached = await redis.get(cacheKey);
 
-      if (cached) {
-        return res.status(200).json({
-          success: true,
-          data: JSON.parse(cached),
-          requestId,
-          cached: true,
-        });
+      if (redis) {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return res.status(200).json({
+            success: true,
+            data: JSON.parse(cached),
+            requestId,
+            cached: true,
+          });
+        }
       }
 
       const analytics = await analyticsService.getShelterAnalytics(shelterId, parseInt(dateRange));
 
-      // Cache for 10 minutes
-      await redis.setex(cacheKey, 600, JSON.stringify(analytics));
+      if (redis) {
+        await redis.setex(cacheKey, 600, JSON.stringify(analytics));
+      }
 
       res.status(200).json({
         success: true,
@@ -55,24 +57,26 @@ const analyticsController = {
     const userId = req.user.userId;
 
     try {
-      // Check cache
       const redis = getRedisClient();
       const cacheKey = `analytics:pet:${petId}`;
-      const cached = await redis.get(cacheKey);
 
-      if (cached) {
-        return res.status(200).json({
-          success: true,
-          data: JSON.parse(cached),
-          requestId,
-          cached: true,
-        });
+      if (redis) {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return res.status(200).json({
+            success: true,
+            data: JSON.parse(cached),
+            requestId,
+            cached: true,
+          });
+        }
       }
 
       const metrics = await analyticsService.getPetMetrics(petId);
 
-      // Cache for 5 minutes
-      await redis.setex(cacheKey, 300, JSON.stringify(metrics));
+      if (redis) {
+        await redis.setex(cacheKey, 300, JSON.stringify(metrics));
+      }
 
       res.status(200).json({
         success: true,

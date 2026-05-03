@@ -10,28 +10,28 @@ const searchController = {
     try {
       const filters = req.query;
 
-      // Create cache key
       const cacheKey = `search:${JSON.stringify(filters)}`;
       const redis = getRedisClient();
 
-      // Check cache
-      const cachedResult = await redis.get(cacheKey);
-      if (cachedResult) {
-        logger.info('Returning cached search results', { requestId });
-        return res.status(200).json({
-          success: true,
-          message: 'Search results fetched from cache',
-          data: JSON.parse(cachedResult),
-          requestId,
-          cached: true,
-        });
+      if (redis) {
+        const cachedResult = await redis.get(cacheKey);
+        if (cachedResult) {
+          logger.info('Returning cached search results', { requestId });
+          return res.status(200).json({
+            success: true,
+            message: 'Search results fetched from cache',
+            data: JSON.parse(cachedResult),
+            requestId,
+            cached: true,
+          });
+        }
       }
 
-      // Perform search
       const results = await searchService.advancedPetSearch(filters);
 
-      // Cache results for 5 minutes
-      await redis.setex(cacheKey, 300, JSON.stringify(results));
+      if (redis) {
+        await redis.setex(cacheKey, 300, JSON.stringify(results));
+      }
 
       logger.info('Advanced search completed', { 
         totalResults: results.pagination.totalCount, 
@@ -96,21 +96,23 @@ const searchController = {
       const redis = getRedisClient();
       const cacheKey = 'popular_searches';
 
-      // Check cache
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return res.status(200).json({
-          success: true,
-          data: { searches: JSON.parse(cached) },
-          requestId,
-          cached: true,
-        });
+      if (redis) {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return res.status(200).json({
+            success: true,
+            data: { searches: JSON.parse(cached) },
+            requestId,
+            cached: true,
+          });
+        }
       }
 
       const searches = await searchService.getPopularSearches();
 
-      // Cache for 1 hour
-      await redis.setex(cacheKey, 3600, JSON.stringify(searches));
+      if (redis) {
+        await redis.setex(cacheKey, 3600, JSON.stringify(searches));
+      }
 
       res.status(200).json({
         success: true,
