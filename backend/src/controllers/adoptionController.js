@@ -113,34 +113,17 @@ const adoptionController = {
         logger.warn('Failed to emit notification socket event:', socketError);
       }
 
-      // Send email notification to shelter
-      try {
-        const shelterInfo = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, pet.ownerId))
-          .limit(1);
-
-        const adopterInfo = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, adopterId))
-          .limit(1);
-
+      // Send email notification to shelter — fire and forget (don't block response)
+      Promise.all([
+        db.select().from(users).where(eq(users.id, pet.ownerId)).limit(1),
+        db.select().from(users).where(eq(users.id, adopterId)).limit(1),
+      ]).then(([shelterInfo, adopterInfo]) => {
         if (shelterInfo.length > 0 && adopterInfo.length > 0) {
-          await emailService.sendAdoptionRequestEmail(
-            shelterInfo[0],
-            adopterInfo[0],
-            pet
-          );
-          logger.info('Adoption request email sent successfully', {
-            shelterEmail: shelterInfo[0].email,
-            petName: pet.name,
-          });
+          emailService.sendAdoptionRequestEmail(shelterInfo[0], adopterInfo[0], pet)
+            .then(() => logger.info('Adoption request email sent', { petName: pet.name }))
+            .catch(err => logger.warn('Failed to send adoption request email:', err.message));
         }
-      } catch (emailError) {
-        logger.warn('Failed to send adoption request email:', emailError);
-      }
+      }).catch(err => logger.warn('Email lookup failed:', err.message));
 
       logger.info('Adoption request created successfully', {
         adopterId,
@@ -593,42 +576,22 @@ const adoptionController = {
         logger.warn('Failed to emit notification socket event:', socketError);
       }
 
-      // Send email notification if approved
+      // Send email notification if approved — fire and forget (don't block response)
       if (status === 'approved') {
-        try {
-          const adopterInfo = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, request.adopterId))
-            .limit(1);
-
-          const shelterInfo = await db
-            .select()
-            .from(users)
-            .where(eq(users.id, shelterId))
-            .limit(1);
-
-          const petInfo = await db
-            .select()
-            .from(pets)
-            .where(eq(pets.id, request.petId))
-            .limit(1);
-
+        Promise.all([
+          db.select().from(users).where(eq(users.id, request.adopterId)).limit(1),
+          db.select().from(users).where(eq(users.id, shelterId)).limit(1),
+          db.select().from(pets).where(eq(pets.id, request.petId)).limit(1),
+        ]).then(([adopterInfo, shelterInfo, petInfo]) => {
           if (adopterInfo.length > 0 && shelterInfo.length > 0 && petInfo.length > 0) {
-            await emailService.sendRequestApprovedEmail(
-              adopterInfo[0],
-              petInfo[0],
-              shelterInfo[0],
+            emailService.sendRequestApprovedEmail(
+              adopterInfo[0], petInfo[0], shelterInfo[0],
               { meetingDate, meetingLocation, meetingNotes }
-            );
-            logger.info('Approval email sent successfully', {
-              adopterEmail: adopterInfo[0].email,
-              petName: petInfo[0].name,
-            });
+            )
+              .then(() => logger.info('Approval email sent', { petName: petInfo[0].name }))
+              .catch(err => logger.warn('Failed to send approval email:', err.message));
           }
-        } catch (emailError) {
-          logger.warn('Failed to send approval email:', emailError);
-        }
+        }).catch(err => logger.warn('Email lookup failed:', err.message));
       }
 
       logger.info('Adoption request responded', {

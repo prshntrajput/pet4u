@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { initializeSocket, disconnectSocket } from '@/lib/socket';
-import { addNotification, incrementUnreadCount } from '@/lib/store/slices/notificationSlice';
+import { addNotification } from '@/lib/store/slices/notificationSlice';
 import { 
   addMessageToConversation, 
   updateConversationsList,
@@ -86,31 +86,22 @@ export default function SocketProvider({ children }) {
     // ✅ Listen for new notifications
     socket.on('notification:new', (data) => {
       console.log('📬 New notification received:', data);
-      
+
       if (data.notification) {
+        // addNotification already increments unreadCount — don't call incrementUnreadCount separately
         dispatch(addNotification(data.notification));
-        dispatch(incrementUnreadCount());
         console.log('✅ Notification dispatched to Redux');
-        
+
         toast.info(data.notification.title, {
           description: data.notification.message,
         });
       }
     });
 
-    // ✅ Listen for message notifications - ONLY from other users
+    // message:notification fires alongside message:new for the same message.
+    // incrementTotalUnreadCount is already called in message:new — skip it here to avoid doubling.
     socket.on('message:notification', (data) => {
       console.log('🔔 Message notification:', data);
-      console.log('Notification sender ID:', data.senderId);
-      console.log('Current user ID:', user.id);
-      
-      // ✅ IGNORE notifications about own messages
-      if (data.senderId === user.id) {
-        console.log('⏭️ Ignoring own message notification');
-        return;
-      }
-      
-      dispatch(incrementTotalUnreadCount());
     });
 
     // Listen for typing indicators

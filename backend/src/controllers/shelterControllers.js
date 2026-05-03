@@ -240,10 +240,12 @@ const shelterController = {
 
     try {
       // Get shelter with user information
+      // shelterId param is the user's ID (pet.owner.id from the frontend)
       const shelterResult = await db
         .select({
           shelter: shelters,
           user: {
+            id: users.id,
             name: users.name,
             email: users.email,
             profileImage: users.profileImage,
@@ -255,7 +257,7 @@ const shelterController = {
         })
         .from(shelters)
         .innerJoin(users, eq(shelters.userId, users.id))
-        .where(eq(shelters.id, shelterId))
+        .where(eq(shelters.userId, shelterId))
         .limit(1);
 
       if (shelterResult.length === 0) {
@@ -273,6 +275,7 @@ const shelterController = {
         message: 'Shelter fetched successfully',
         data: {
           id: result.shelter.id,
+          userId: result.shelter.userId,
           organizationName: result.shelter.organizationName,
           description: result.shelter.description,
           website: result.shelter.website,

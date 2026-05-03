@@ -52,7 +52,8 @@ export default function ShelterProfilePage() {
       if (res.success) {
         const data = res.data.data;
         setShelter(data);
-        loadShelterPets(data.user?.id || shelterId);
+        // userId is the owner's user ID — used as ownerId filter for pets
+        loadShelterPets(data.userId || data.user?.id || shelterId);
       } else {
         setError('Shelter not found');
       }
@@ -66,7 +67,7 @@ export default function ShelterProfilePage() {
   const loadShelterPets = async (ownerId) => {
     setPetsLoading(true);
     try {
-      const res = await petAPI.getAllPets({ ownerId, status: 'available', limit: 12 });
+      const res = await petAPI.getAllPets({ ownerId, adoptionStatus: 'available', limit: 12 });
       if (res.success) {
         setPets(res.data.data?.pets || []);
       }

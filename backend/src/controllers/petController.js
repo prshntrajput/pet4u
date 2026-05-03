@@ -137,6 +137,7 @@ const petController = {
         isNeutered,
         energyLevel,
         adoptionStatus = 'available',
+        ownerId,
         sortBy = 'createdAt',
         order = 'desc'
       } = req.query;
@@ -151,6 +152,10 @@ const petController = {
 
       if (adoptionStatus) {
         conditions.push(eq(pets.adoptionStatus, adoptionStatus));
+      }
+
+      if (ownerId) {
+        conditions.push(eq(pets.ownerId, ownerId));
       }
 
       if (species) {
