@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { createId } = require('@paralleldrive/cuid2');
 const { db } = require('../config/database');
-const { users, userSessions, emailVerificationTokens, passwordResetTokens } = require('../models');
+const { users, userSessions, emailVerificationTokens, passwordResetTokens, shelters } = require('../models');
 const jwtUtils = require('../utils/jwt');
 const { logger } = require('../config/logger');
 const { eq, and } = require('drizzle-orm');
@@ -69,6 +69,21 @@ const authController = {
         role: userData.role,
         requestId
       });
+
+      // Auto-create shelter profile record for shelter users
+      if (userData.role === 'shelter') {
+        await db.insert(shelters).values({
+          id: createId(),
+          userId: userData.id,
+          organizationName: userData.name,
+          currentPetCount: 0,
+          documentsVerified: false,
+          verificationStatus: 'pending',
+          averageRating: '0.00',
+          totalReviews: 0
+        });
+        logger.info('Shelter profile auto-created', { userId: userData.id });
+      }
 
       // Create and store email verification token
       const verificationToken = crypto.randomBytes(32).toString('hex');

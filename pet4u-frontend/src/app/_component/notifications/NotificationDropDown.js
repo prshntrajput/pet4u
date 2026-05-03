@@ -29,20 +29,19 @@ export default function NotificationDropdown() {
   const { notifications, unreadCount, isLoading } = useSelector((state) => state.notifications);
   const [isOpen, setIsOpen] = useState(false);
 
-  // ✅ Fetch notifications on mount - NO dependencies that change
+  // Fetch on mount
   useEffect(() => {
     dispatch(fetchNotifications({ limit: 10, unreadOnly: false }));
     dispatch(fetchUnreadCount());
-  }, [dispatch]); // ✅ Only dispatch as dependency
+  }, [dispatch]);
 
-  // ✅ Log updates for debugging - separate useEffect
+  // Polling fallback every 30 seconds — catches cases where socket is not connected
   useEffect(() => {
-    console.log('🔔 Notification state updated:', {
-      count: notifications.length,
-      unread: unreadCount,
-      latest: notifications[0]?.title,
-    });
-  }, [notifications.length, unreadCount]); // ✅ Use .length instead of whole array
+    const interval = setInterval(() => {
+      dispatch(fetchUnreadCount());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   const handleOpen = () => {
     setIsOpen(true);

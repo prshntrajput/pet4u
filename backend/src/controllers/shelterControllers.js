@@ -260,15 +260,58 @@ const shelterController = {
         .where(eq(shelters.userId, shelterId))
         .limit(1);
 
-      if (shelterResult.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Shelter not found',
-          requestId
-        });
-      }
+      let result = shelterResult[0];
 
-      const result = shelterResult[0];
+      // If no shelter profile exists yet, auto-create one for this user
+      if (!result) {
+        const userRow = await db
+          .select({ id: users.id, name: users.name, role: users.role })
+          .from(users)
+          .where(eq(users.id, shelterId))
+          .limit(1);
+
+        if (userRow.length === 0 || userRow[0].role !== 'shelter') {
+          return res.status(404).json({
+            success: false,
+            message: 'Shelter not found',
+            requestId
+          });
+        }
+
+        const newShelterId = createId();
+        await db.insert(shelters).values({
+          id: newShelterId,
+          userId: shelterId,
+          organizationName: userRow[0].name,
+          currentPetCount: 0,
+          documentsVerified: false,
+          verificationStatus: 'pending',
+          averageRating: '0.00',
+          totalReviews: 0
+        });
+
+        // Re-fetch after creation
+        const refetch = await db
+          .select({
+            shelter: shelters,
+            user: {
+              id: users.id,
+              name: users.name,
+              email: users.email,
+              profileImage: users.profileImage,
+              city: users.city,
+              state: users.state,
+              country: users.country,
+              createdAt: users.createdAt
+            }
+          })
+          .from(shelters)
+          .innerJoin(users, eq(shelters.userId, users.id))
+          .where(eq(shelters.userId, shelterId))
+          .limit(1);
+
+        result = refetch[0];
+      }
 
       res.status(200).json({
         success: true,
