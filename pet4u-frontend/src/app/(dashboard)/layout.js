@@ -379,7 +379,7 @@ export default function DashboardLayout({ children }) {
       <footer className="hidden lg:block bg-card border-t mt-auto">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
-            © 2025 Pet4u. All rights reserved. Made with ❤️ for pets.
+            © 2025 Pet4u. All rights reserved.
           </div>
         </div>
       </footer>

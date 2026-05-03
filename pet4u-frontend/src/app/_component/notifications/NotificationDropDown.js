@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, Loader2 } from 'lucide-react';
+import { Bell, Check, Loader2, PawPrint, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -76,13 +76,13 @@ export default function NotificationDropdown() {
   };
 
   const getNotificationIcon = (type) => {
-    const icons = {
-      adoption_request: '🐾',
-      message: '💬',
-      request_approved: '✅',
-      request_rejected: '❌',
-    };
-    return icons[type] || '🔔';
+    const cfg = {
+      adoption_request: { Icon: PawPrint,      cls: 'text-primary'      },
+      message:          { Icon: MessageSquare, cls: 'text-primary'      },
+      request_approved: { Icon: CheckCircle,   cls: 'text-emerald-600'  },
+      request_rejected: { Icon: XCircle,       cls: 'text-destructive'  },
+    }[type] || { Icon: Bell, cls: 'text-muted-foreground' };
+    return <cfg.Icon className={`h-4 w-4 ${cfg.cls}`} />;
   };
 
   return (
@@ -126,10 +126,10 @@ export default function NotificationDropdown() {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 text-sm">
+          <div className="text-center py-8 text-muted-foreground text-sm">
             No notifications yet
           </div>
         ) : (
@@ -139,28 +139,28 @@ export default function NotificationDropdown() {
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 className={`cursor-pointer p-3 ${
-                  !notification.isRead ? 'bg-blue-50' : ''
+                  !notification.isRead ? 'bg-primary/5' : ''
                 }`}
               >
                 <div className="flex items-start space-x-3 w-full">
-                  <div className="text-2xl flex-shrink-0">
+                  <div className="p-2 rounded-lg bg-muted flex-shrink-0">
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {notification.title}
                     </p>
-                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(notification.createdAt), {
                         addSuffix: true,
                       })}
                     </p>
                   </div>
                   {!notification.isRead && (
-                    <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
+                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1" />
                   )}
                 </div>
               </DropdownMenuItem>
@@ -175,7 +175,7 @@ export default function NotificationDropdown() {
             router.push('/notifications');
             setIsOpen(false);
           }}
-          className="text-center justify-center text-blue-600 font-medium cursor-pointer"
+          className="text-center justify-center text-primary font-medium cursor-pointer"
         >
           View all notifications
         </DropdownMenuItem>

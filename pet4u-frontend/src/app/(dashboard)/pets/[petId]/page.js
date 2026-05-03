@@ -37,6 +37,7 @@ import {
   Loader2,
   Clock,
   CalendarCheck,
+  PawPrint,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
@@ -176,7 +177,7 @@ export default function PetDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -184,9 +185,9 @@ export default function PetDetailPage() {
   if (error || !currentPet) {
     return (
       <div className="text-center py-20">
-        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Pet Not Found</h2>
-        <p className="text-gray-600 mb-6">{error || 'This pet listing could not be found.'}</p>
+        <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Pet Not Found</h2>
+        <p className="text-muted-foreground mb-6">{error || 'This pet listing could not be found.'}</p>
         <Button onClick={() => router.push('/pets')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Pets
@@ -272,7 +273,7 @@ export default function PetDetailPage() {
           {/* Left Column - Images */}
           <div className="lg:col-span-2 space-y-4">
             <Card className="overflow-hidden">
-              <div className="relative aspect-video bg-gray-100">
+              <div className="relative aspect-video bg-muted">
                 {displayImages[selectedImageIndex]?.imageUrl ? (
                   <Image
                     src={displayImages[selectedImageIndex].imageUrl}
@@ -283,7 +284,9 @@ export default function PetDetailPage() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-8xl">🐾</div>
+                  <div className="flex items-center justify-center h-full">
+                  <PawPrint className="h-16 w-16 text-muted-foreground/25" />
+                </div>
                 )}
               </div>
             </Card>
@@ -295,13 +298,15 @@ export default function PetDetailPage() {
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
                     className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImageIndex === index ? 'border-blue-600 scale-105' : 'border-gray-300 hover:border-gray-400'
+                      selectedImageIndex === index ? 'border-primary scale-105' : 'border-border hover:border-muted-foreground'
                     }`}
                   >
                     {image.imageUrl ? (
                       <Image src={image.imageUrl} alt={`${pet.name} - ${index + 1}`} fill className="object-cover" sizes="100px" />
                     ) : (
-                      <div className="flex items-center justify-center h-full bg-gray-100">🐾</div>
+                      <div className="flex items-center justify-center h-full bg-muted">
+                        <PawPrint className="h-5 w-5 text-muted-foreground/25" />
+                      </div>
                     )}
                   </button>
                 ))}
@@ -311,13 +316,13 @@ export default function PetDetailPage() {
             <Card>
               <CardContent className="p-6 space-y-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">About {pet.name}</h2>
-                  <p className="text-gray-700 whitespace-pre-wrap">{pet.description || 'No description available.'}</p>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">About {pet.name}</h2>
+                  <p className="text-foreground whitespace-pre-wrap">{pet.description || 'No description available.'}</p>
                 </div>
                 {pet.story && (
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Story</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap">{pet.story}</p>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Story</h3>
+                    <p className="text-foreground whitespace-pre-wrap">{pet.story}</p>
                   </div>
                 )}
               </CardContent>
@@ -325,7 +330,7 @@ export default function PetDetailPage() {
 
             <Card>
               <CardContent className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900">Health Information</h3>
+                <h3 className="text-xl font-semibold text-foreground">Health Information</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-2">
                     {pet.isVaccinated ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
@@ -342,14 +347,14 @@ export default function PetDetailPage() {
                 </div>
                 {pet.medicalHistory && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Medical History</h4>
-                    <p className="text-sm text-gray-700">{pet.medicalHistory}</p>
+                    <h4 className="font-medium text-foreground mb-2">Medical History</h4>
+                    <p className="text-sm text-foreground">{pet.medicalHistory}</p>
                   </div>
                 )}
                 {pet.specialNeeds && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Special Needs</h4>
-                    <p className="text-sm text-gray-700">{pet.specialNeeds}</p>
+                    <h4 className="font-medium text-foreground mb-2">Special Needs</h4>
+                    <p className="text-sm text-foreground">{pet.specialNeeds}</p>
                   </div>
                 )}
               </CardContent>
@@ -357,7 +362,7 @@ export default function PetDetailPage() {
 
             <Card>
               <CardContent className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900">Behavioral Traits</h3>
+                <h3 className="text-xl font-semibold text-foreground">Behavioral Traits</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {pet.goodWithKids !== null && (
                     <div className="flex items-center space-x-2">
@@ -386,13 +391,13 @@ export default function PetDetailPage() {
                 </div>
                 {pet.energyLevel && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Energy Level</h4>
+                    <h4 className="font-medium text-foreground mb-2">Energy Level</h4>
                     <Badge variant="secondary" className="capitalize">{pet.energyLevel}</Badge>
                   </div>
                 )}
                 {pet.trainedLevel && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Training Level</h4>
+                    <h4 className="font-medium text-foreground mb-2">Training Level</h4>
                     <Badge variant="secondary" className="capitalize">{pet.trainedLevel.replace('_', ' ')}</Badge>
                   </div>
                 )}
@@ -406,14 +411,14 @@ export default function PetDetailPage() {
               <CardContent className="p-6 space-y-4">
                 <div>
                   <div className="flex items-start justify-between mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900">{pet.name}</h1>
+                    <h1 className="text-3xl font-bold text-foreground">{pet.name}</h1>
                     {pet.isUrgent && (
                       <Badge variant="destructive" className="flex items-center space-x-1">
                         <AlertCircle size={14} /><span>Urgent</span>
                       </Badge>
                     )}
                   </div>
-                  <p className="text-lg text-gray-600">
+                  <p className="text-lg text-muted-foreground">
                     {pet.breed || (pet.species ? pet.species.charAt(0).toUpperCase() + pet.species.slice(1) : 'Pet')}
                   </p>
                 </div>
@@ -428,24 +433,24 @@ export default function PetDetailPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center text-gray-700">
-                    <Calendar className="h-5 w-5 mr-3 text-gray-500" />
+                  <div className="flex items-center text-foreground">
+                    <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span>{getAgeDisplay()}</span>
                   </div>
-                  <div className="flex items-center text-gray-700">
-                    <Ruler className="h-5 w-5 mr-3 text-gray-500" />
+                  <div className="flex items-center text-foreground">
+                    <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
                     <span className="capitalize">{pet.gender || 'Unknown'}</span>
                     {pet.size && <span className="ml-2">• {pet.size.replace('_', ' ')}</span>}
                   </div>
                   {pet.weight && (
-                    <div className="flex items-center text-gray-700">
-                      <Weight className="h-5 w-5 mr-3 text-gray-500" />
+                    <div className="flex items-center text-foreground">
+                      <Weight className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span>{pet.weight} kg</span>
                     </div>
                   )}
                   {(pet.city || pet.state) && (
-                    <div className="flex items-center text-gray-700">
-                      <MapPin className="h-5 w-5 mr-3 text-gray-500" />
+                    <div className="flex items-center text-foreground">
+                      <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
                       <span>{pet.city}{pet.city && pet.state ? ', ' : ''}{pet.state}</span>
                     </div>
                   )}
@@ -490,23 +495,23 @@ export default function PetDetailPage() {
             {pet.owner && (
               <Card>
                 <CardContent className="p-6 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-foreground">
                     {pet.owner.role === 'shelter' ? 'Shelter Information' : 'Owner Information'}
                   </h3>
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={pet.owner.profileImage} alt={pet.owner.name} />
-                      <AvatarFallback className="bg-blue-600 text-white">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         {pet.owner.name?.charAt(0).toUpperCase() || 'O'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium text-gray-900">{pet.owner.name || 'Unknown'}</div>
-                      <div className="text-sm text-gray-600 capitalize">{pet.owner.role || 'Owner'}</div>
+                      <div className="font-medium text-foreground">{pet.owner.name || 'Unknown'}</div>
+                      <div className="text-sm text-muted-foreground capitalize">{pet.owner.role || 'Owner'}</div>
                     </div>
                   </div>
                   {(pet.owner.city || pet.owner.state) && (
-                    <div className="flex items-center text-sm text-gray-600">
+                    <div className="flex items-center text-sm text-muted-foreground">
                       <MapPin size={16} className="mr-2" />
                       {pet.owner.city}{pet.owner.city && pet.owner.state ? ', ' : ''}{pet.owner.state}
                     </div>
@@ -572,7 +577,7 @@ export default function PetDetailPage() {
                 maxLength={1000}
                 className={requestMessage.length > 0 && requestMessage.length < 20 ? 'border-red-500' : ''}
               />
-              <p className={`text-xs ${requestMessage.length < 20 && requestMessage.length > 0 ? 'text-red-500' : 'text-gray-500'}`}>
+              <p className={`text-xs ${requestMessage.length < 20 && requestMessage.length > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
                 {requestMessage.length}/1000 characters
                 {requestMessage.length < 20 && requestMessage.length > 0 && ' (minimum 20 required)'}
               </p>
