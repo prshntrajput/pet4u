@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import apiWrapper from '@/lib/api/axios';
 import { petAPI } from '@/lib/api/pets';
+import { messageAPI } from '@/lib/api/messages';
 import PetCard from '@/app/_component/pets/PetCard';
 
 export default function ShelterProfilePage() {
@@ -38,11 +39,22 @@ export default function ShelterProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [petsLoading, setPetsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [canMessage, setCanMessage] = useState(false);
 
   useEffect(() => {
     if (!params?.shelterId) return;
     loadShelter(params.shelterId);
   }, [params?.shelterId]);
+
+  // Check messaging permission once shelter loads
+  useEffect(() => {
+    if (!shelter || !user) return;
+    const isSelf = user.id === shelter.user?.id;
+    if (isSelf || user.role !== 'adopter') return;
+    messageAPI.canMessage(shelter.user?.id)
+      .then((res) => setCanMessage(res.success && res.data?.data?.canMessage))
+      .catch(() => setCanMessage(false));
+  }, [shelter?.id, user?.id]);
 
   const loadShelter = async (shelterId) => {
     setIsLoading(true);
@@ -146,14 +158,21 @@ export default function ShelterProfilePage() {
               )}
             </div>
 
-            {user && user.id !== shelter.user?.id && (
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/messages/${shelter.user?.id}`)}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Message
-              </Button>
+            {user && user.id !== shelter.user?.id && user.role === 'adopter' && (
+              canMessage ? (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/messages/${shelter.user?.id}`)}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Message
+                </Button>
+              ) : (
+                <Button variant="outline" disabled title="Available after your adoption request is approved">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Message (approval required)
+                </Button>
+              )
             )}
           </div>
         </CardContent>

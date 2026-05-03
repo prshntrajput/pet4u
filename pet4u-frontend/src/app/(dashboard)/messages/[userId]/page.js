@@ -37,8 +37,9 @@ export default function ChatPage() {
       // Check messaging permission first
       messageAPI.canMessage(otherUserId)
         .then((res) => {
-          setCanMessage(res.data.canMessage);
-          if (!res.data.canMessage) setLockReason(res.data.reason || '');
+          const allowed = res.success && res.data?.data?.canMessage;
+          setCanMessage(allowed);
+          if (!allowed) setLockReason(res.data?.data?.reason || 'Messaging not available');
         })
         .catch(() => setCanMessage(false));
 

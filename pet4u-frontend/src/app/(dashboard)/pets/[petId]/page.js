@@ -7,6 +7,7 @@ import { fetchPetById, clearCurrentPet } from '@/lib/store/slices/petSlice';
 import { createAdoptionRequest } from '@/lib/store/slices/adoptionSlice';
 import { addFavorite, removeFavorite, checkFavorite } from '@/lib/store/slices/favoriteSlice';
 import { appointmentsAPI } from '@/lib/api/appointments';
+import { messageAPI } from '@/lib/api/messages';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -70,6 +71,9 @@ export default function PetDetailPage() {
   const [requestMessage, setRequestMessage] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
 
+  // Messaging permission
+  const [canMessage, setCanMessage] = useState(false);
+
   // Visit booking dialog
   const [showVisitDialog, setShowVisitDialog] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
@@ -93,6 +97,17 @@ export default function PetDetailPage() {
       setIsFavorite(favoritedPetIds.includes(currentPet.id));
     }
   }, [favoritedPetIds, currentPet]);
+
+  // Check if current user can message the pet owner
+  useEffect(() => {
+    if (!currentPet || !user) return;
+    const isOwnerCheck = user.id === currentPet.ownerId || user.userId === currentPet.ownerId;
+    // Shelters never need to message themselves; only adopters need the check
+    if (isOwnerCheck || user.role !== 'adopter') return;
+    messageAPI.canMessage(currentPet.ownerId)
+      .then((res) => setCanMessage(res.success && res.data?.data?.canMessage))
+      .catch(() => setCanMessage(false));
+  }, [currentPet?.id, user?.id]);
 
   const loadAvailability = useCallback(async (shelterId) => {
     setSlotsLoading(true);
@@ -497,10 +512,17 @@ export default function PetDetailPage() {
                     </div>
                   )}
                   <div className="space-y-2 pt-2">
-                    <Button variant="outline" className="w-full" size="sm" onClick={() => router.push(`/messages/${pet.owner.id}`)}>
-                      <Mail size={16} className="mr-2" />Send Message
-                    </Button>
-                    {pet.owner.role === 'shelter' && (
+                    {!isOwner && canMessage && (
+                      <Button variant="outline" className="w-full" size="sm" onClick={() => router.push(`/messages/${pet.owner.id}`)}>
+                        <Mail size={16} className="mr-2" />Send Message
+                      </Button>
+                    )}
+                    {!isOwner && !canMessage && user?.role === 'adopter' && (
+                      <Button variant="outline" className="w-full" size="sm" disabled title="Available after your adoption request is approved">
+                        <Mail size={16} className="mr-2" />Message (approval required)
+                      </Button>
+                    )}
+                    {pet.owner.role === 'shelter' && !isOwner && (
                       <Button variant="outline" className="w-full" size="sm" onClick={() => router.push(`/shelters/${pet.owner.id}`)}>
                         View Shelter Profile
                       </Button>
