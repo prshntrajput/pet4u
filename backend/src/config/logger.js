@@ -35,7 +35,12 @@ const createLogger = () => {
     }
   };
   
-  return pino(config);
+  return pino({
+    ...config,
+    serializers: {
+      err: pino.stdSerializers.err,
+    },
+  });
 };
 
 const logger = createLogger();
