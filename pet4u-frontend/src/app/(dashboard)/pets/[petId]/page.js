@@ -32,11 +32,9 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  IndianRupee
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PetReviewsSection from '@/app/_component/pets/PetReviewsSection';
-import RazorpayCheckout from '../../../_component/payments/RazorPayCheckout';
 
 export default function PetDetailPage() {
   const params = useParams();
@@ -50,7 +48,6 @@ export default function PetDetailPage() {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
     if (params?.petId) { // ✅ Added optional chaining
@@ -126,22 +123,6 @@ export default function PetDetailPage() {
     }
   };
 
-  // ✅ Payment success handler
-  const handlePaymentSuccess = (payment) => {
-    setPaymentCompleted(true);
-    toast.success('Payment successful! You can now proceed with adoption request.');
-    // Auto-open the adoption request dialog after a short delay
-    setTimeout(() => {
-      setShowRequestDialog(true);
-    }, 1000);
-  };
-
-  // ✅ Payment error handler
-  const handlePaymentError = (error) => {
-    console.error('Payment error:', error);
-    toast.error(error?.message || 'Payment failed. Please try again.');
-  };
-
   const handleAdoptionRequest = async () => {
     if (!user) {
       toast.error('Please login to send adoption request');
@@ -151,13 +132,6 @@ export default function PetDetailPage() {
 
     if (user.role !== 'adopter') {
       toast.error('Only adopters can send adoption requests');
-      return;
-    }
-
-    // ✅ Check if payment is required and completed
-    if (pet.adoptionFee > 0 && !paymentCompleted) {
-      toast.error('Please complete the payment first');
-      setShowRequestDialog(false);
       return;
     }
 
@@ -180,7 +154,7 @@ export default function PetDetailPage() {
       
       // Show success message before redirect
       setTimeout(() => {
-        router.push('/adoption-requests'); // ✅ Updated path
+        router.push('/my-requests');
       }, 1500);
     } catch (error) {
       toast.error(error || 'Failed to send adoption request');
@@ -198,12 +172,6 @@ export default function PetDetailPage() {
 
     if (user.role !== 'adopter') {
       toast.error('Only adopters can send adoption requests');
-      return;
-    }
-
-    // ✅ Check if payment is required
-    if (pet.adoptionFee > 0 && !paymentCompleted) {
-      toast.info('Please complete the payment to proceed with adoption');
       return;
     }
 
@@ -476,67 +444,18 @@ export default function PetDetailPage() {
                   )}
                 </div>
 
-                {/* ✅ Adoption Fee & Payment Section */}
-                {pet.adoptionFee > 0 && (
-                  <div className="py-4 border-y">
-                    <div className="space-y-3">
-                      <div>
-                        <div className="text-sm text-gray-600 mb-1">Adoption Fee</div>
-                        <div className="text-3xl font-bold text-blue-600 flex items-center">
-                          <IndianRupee className="h-7 w-7" />
-                          {pet.adoptionFee}
-                        </div>
-                      </div>
-                      
-                      {paymentCompleted ? (
-                        <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-lg">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="font-medium">Payment Completed</span>
-                        </div>
-                      ) : (
-                        <RazorpayCheckout
-                          amount={parseFloat(pet.adoptionFee)}
-                          petId={pet.id}
-                          petName={pet.name}
-                          paymentType="adoption_fee"
-                          description={`Adoption fee for ${pet.name}`}
-                          onSuccess={handlePaymentSuccess}
-                          onError={handlePaymentError}
-                          disabled={pet.adoptionStatus !== 'available' || isOwner}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* ✅ Free Adoption Badge */}
-                {(pet.adoptionFee === 0 || !pet.adoptionFee) && (
-                  <div className="py-4 border-y">
-                    <Badge variant="success" className="text-lg px-4 py-2">
-                      <CheckCircle className="mr-2 h-5 w-5" />
-                      Free Adoption
-                    </Badge>
-                  </div>
-                )}
-
                 {/* Action Buttons */}
                 <div className="space-y-2 pt-4">
                   <Button
                     className="w-full"
                     size="lg"
                     onClick={handleOpenRequestDialog}
-                    disabled={
-                      pet.adoptionStatus !== 'available' || 
-                      isOwner ||
-                      (pet.adoptionFee > 0 && !paymentCompleted)
-                    }
+                    disabled={pet.adoptionStatus !== 'available' || isOwner}
                   >
                     {isOwner
-                      ? 'Your Listing' 
+                      ? 'Your Listing'
                       : pet.adoptionStatus !== 'available'
                       ? 'Not Available'
-                      : pet.adoptionFee > 0 && !paymentCompleted
-                      ? 'Complete Payment First'
                       : 'Send Adoption Request'}
                   </Button>
 
@@ -653,14 +572,6 @@ export default function PetDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* ✅ Payment confirmation badge */}
-            {pet.adoptionFee > 0 && paymentCompleted && (
-              <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-lg">
-                <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                <span className="text-sm font-medium">Payment of ₹{pet.adoptionFee} completed</span>
-              </div>
-            )}
-            
             <div className="space-y-2">
               <Textarea
                 value={requestMessage}

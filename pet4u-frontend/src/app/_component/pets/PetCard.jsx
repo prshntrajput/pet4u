@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addFavorite, removeFavorite } from '@/lib/store/slices/favoriteSlice';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, MapPin, IndianRupee, AlertCircle } from 'lucide-react';
+import { Heart, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PetCard({ pet, showFavoriteButton = true }) {
@@ -146,20 +146,10 @@ export default function PetCard({ pet, showFavoriteButton = true }) {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 mt-auto">
+            <div className="flex items-center pt-1.5 border-t border-gray-100 mt-auto">
               <div className="flex items-center gap-0.5 text-[11px] text-gray-400">
                 <MapPin size={11} className="flex-shrink-0" />
-                <span className="truncate max-w-[90px]">{pet.city}</span>
-              </div>
-              <div className="font-bold text-xs">
-                {pet.adoptionFee > 0 ? (
-                  <span className="flex items-center text-primary">
-                    <IndianRupee size={11} />
-                    {pet.adoptionFee}
-                  </span>
-                ) : (
-                  <span className="text-emerald-500">Free</span>
-                )}
+                <span className="truncate max-w-[120px]">{pet.city}</span>
               </div>
             </div>
           </div>

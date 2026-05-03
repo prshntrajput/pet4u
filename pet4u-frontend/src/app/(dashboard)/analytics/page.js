@@ -12,33 +12,40 @@ export default function AnalyticsPage() {
   const { user } = useAuth({ requireAuth: true });
   const router = useRouter();
   const [analytics, setAnalytics] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [dateRange, setDateRange] = useState(30);
 
   useEffect(() => {
-    if (user && user.role !== 'shelter') {
+    if (!user) return;
+    if (user.role !== 'shelter') {
       router.push('/dashboard');
       return;
     }
-
-    if (user && user.role === 'shelter') {
-      loadAnalytics();
-    }
+    loadAnalytics();
   }, [user, router, dateRange]);
 
   const loadAnalytics = async () => {
     setIsLoading(true);
+    setHasError(false);
     try {
       const response = await analyticsAPI.getShelterAnalytics({ dateRange });
       if (response.success) {
         setAnalytics(response.data.data);
+      } else {
+        setHasError(true);
+        toast.error(response.error || 'Failed to load analytics');
       }
     } catch (error) {
+      setHasError(true);
       toast.error('Failed to load analytics');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!user) return null;
+  if (user.role !== 'shelter') return null;
 
   if (isLoading) {
     return (
@@ -48,8 +55,29 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!user || user.role !== 'shelter') {
-    return null;
+  if (hasError || !analytics) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex p-2 rounded-xl bg-primary/10 border-2 border-primary/20">
+            <BarChart3 className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+          <BarChart3 className="h-12 w-12 text-muted-foreground/40" />
+          <p className="text-muted-foreground">
+            {hasError ? 'Failed to load analytics data.' : 'No analytics data available yet.'}
+          </p>
+          <button
+            onClick={loadAnalytics}
+            className="text-sm text-primary underline underline-offset-2"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

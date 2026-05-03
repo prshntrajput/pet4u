@@ -20,7 +20,6 @@ import {
   Shield,
   Search,
   TrendingUp,
-  CreditCard,
   Menu,
   X,
   AlertTriangle,
@@ -200,12 +199,6 @@ export default function DashboardLayout({ children }) {
                       Lost & Found
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/payments" className="cursor-pointer">
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Payments
-                    </Link>
-                  </DropdownMenuItem>
                   {user?.role === 'admin' && (
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="cursor-pointer">
@@ -295,15 +288,6 @@ export default function DashboardLayout({ children }) {
               >
                 <AlertTriangle size={20} />
                 <span className="font-medium">Lost & Found</span>
-              </Link>
-
-              <Link
-                href="/payments"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent"
-              >
-                <CreditCard size={20} />
-                <span className="font-medium">Payments</span>
               </Link>
 
               {user?.role === 'admin' && (

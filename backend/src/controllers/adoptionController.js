@@ -211,6 +211,7 @@ const adoptionController = {
           respondedAt: adoptionRequests.respondedAt,
           // Pet fields
           petName: pets.name,
+          petSlug: pets.slug,
           petSpecies: pets.species,
           petBreed: pets.breed,
           petAge: pets.age,
@@ -220,7 +221,6 @@ const adoptionController = {
           petPrimaryImage: pets.primaryImage,
           petCity: pets.city,
           petState: pets.state,
-          petAdoptionFee: pets.adoptionFee,
           petAdoptionStatus: pets.adoptionStatus,
           petDescription: pets.description,
           // Shelter fields
@@ -268,6 +268,7 @@ const adoptionController = {
         respondedAt: req.respondedAt,
         pet: {
           id: req.petId,
+          slug: req.petSlug,
           name: req.petName,
           species: req.petSpecies,
           breed: req.petBreed,
@@ -278,7 +279,6 @@ const adoptionController = {
           primaryImage: req.petPrimaryImage,
           city: req.petCity,
           state: req.petState,
-          adoptionFee: req.petAdoptionFee,
           adoptionStatus: req.petAdoptionStatus,
           description: req.petDescription,
         },
@@ -371,6 +371,7 @@ const adoptionController = {
           respondedAt: adoptionRequests.respondedAt,
           // Pet fields
           petName: pets.name,
+          petSlug: pets.slug,
           petSpecies: pets.species,
           petBreed: pets.breed,
           petAge: pets.age,
@@ -380,7 +381,6 @@ const adoptionController = {
           petPrimaryImage: pets.primaryImage,
           petCity: pets.city,
           petState: pets.state,
-          petAdoptionFee: pets.adoptionFee,
           petAdoptionStatus: pets.adoptionStatus,
           petDescription: pets.description,
           // Adopter fields
@@ -426,6 +426,7 @@ const adoptionController = {
         respondedAt: req.respondedAt,
         pet: {
           id: req.petId,
+          slug: req.petSlug,
           name: req.petName,
           species: req.petSpecies,
           breed: req.petBreed,
@@ -436,7 +437,6 @@ const adoptionController = {
           primaryImage: req.petPrimaryImage,
           city: req.petCity,
           state: req.petState,
-          adoptionFee: req.petAdoptionFee,
           adoptionStatus: req.petAdoptionStatus,
           description: req.petDescription,
         },

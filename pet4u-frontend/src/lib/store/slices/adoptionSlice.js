@@ -133,27 +133,29 @@ const adoptionSlice = createSlice({
       .addCase(fetchMyRequests.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.myRequests = [];
       })
       .addCase(fetchMyRequests.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.myRequests = action.payload.requests;
-        state.pagination = action.payload.pagination;
+        state.myRequests = action.payload?.requests ?? [];
+        state.pagination = action.payload?.pagination ?? state.pagination;
         state.error = null;
       })
       .addCase(fetchMyRequests.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch received requests
       .addCase(fetchReceivedRequests.pending, (state) => {
         state.isLoading = true;
         state.error = null;
+        state.receivedRequests = [];
       })
       .addCase(fetchReceivedRequests.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.receivedRequests = action.payload.requests;
-        state.pagination = action.payload.pagination;
+        state.receivedRequests = action.payload?.requests ?? [];
+        state.pagination = action.payload?.pagination ?? state.pagination;
         state.error = null;
       })
       .addCase(fetchReceivedRequests.rejected, (state, action) => {
@@ -168,10 +170,10 @@ const adoptionSlice = createSlice({
       })
       .addCase(respondToRequest.fulfilled, (state, action) => {
         state.isResponding = false;
-        const index = state.receivedRequests.findIndex(r => r.id === action.payload.id);
-        if (index !== -1) {
-          state.receivedRequests[index] = action.payload;
-        }
+        // Remove from list immediately — the backend returns a raw DB record
+        // without nested pet/adopter data, so removing is safer than replacing.
+        // The page dispatches a fresh fetch after this which repopulates correctly.
+        state.receivedRequests = state.receivedRequests.filter(r => r.id !== action.payload.id);
         state.error = null;
       })
       .addCase(respondToRequest.rejected, (state, action) => {

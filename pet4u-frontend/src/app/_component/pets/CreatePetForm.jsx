@@ -61,7 +61,6 @@ export default function CreatePetForm() {
       energyLevel: 'medium',
       trainedLevel: 'not_trained',
       houseTrained: false,
-      adoptionFee: 0,
       isUrgent: false,
       urgentReason: '',
       city: user?.city || '',
@@ -113,7 +112,6 @@ export default function CreatePetForm() {
         ...data,
         age: data.age ? parseInt(data.age) : undefined,
         weight: data.weight ? parseFloat(data.weight) : undefined,
-        adoptionFee: data.adoptionFee ? parseFloat(data.adoptionFee) : 0,
       };
 
       const result = await dispatch(createPet(formattedData)).unwrap();
@@ -501,18 +499,6 @@ export default function CreatePetForm() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="adoptionFee" className="text-sm font-semibold">Adoption Fee (₹)</Label>
-            <Input
-              id="adoptionFee"
-              type="number"
-              step="0.01"
-              {...register('adoptionFee', { valueAsNumber: true })}
-              className="h-10 border-2"
-            />
-            <p className="text-xs text-muted-foreground">Set to 0 for free adoption</p>
-          </div>
-
           <div className="flex items-center space-x-2">
             <Checkbox id="isUrgent" {...register('isUrgent')} />
             <Label htmlFor="isUrgent" className="text-sm font-normal cursor-pointer">

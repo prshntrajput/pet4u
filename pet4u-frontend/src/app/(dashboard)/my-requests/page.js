@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Calendar, MapPin, Mail, FileText, Sparkles, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Calendar, MapPin, Mail, FileText, Sparkles, CheckCircle, XCircle, PawPrint } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow, format } from 'date-fns';
 import Link from 'next/link';
@@ -122,18 +122,18 @@ export default function MyRequestsPage() {
                   <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row md:items-start gap-6">
                       {/* Pet Image */}
-                      <Link href={`/pets/${request.pet.slug || request.pet.id}`} className="flex-shrink-0">
+                      <Link href={`/pets/${request.pet?.slug || request.pet?.id || '#'}`} className="flex-shrink-0">
                         <div className="relative w-32 h-32 rounded-xl overflow-hidden bg-muted border-2 border-border hover:border-primary/50 transition-all">
-                          {request.pet.primaryImage ? (
+                          {request.pet?.primaryImage ? (
                             <Image
                               src={request.pet.primaryImage}
-                              alt={request.pet.name}
+                              alt={request.pet?.name || 'Pet'}
                               fill
                               className="object-cover"
                             />
                           ) : (
-                            <div className="flex items-center justify-center h-full text-4xl">
-                              🐾
+                            <div className="flex items-center justify-center h-full">
+                              <PawPrint className="h-10 w-10 text-muted-foreground/40" />
                             </div>
                           )}
                         </div>
@@ -144,9 +144,9 @@ export default function MyRequestsPage() {
                         {/* Pet Info */}
                         <div>
                           <div className="flex items-start justify-between gap-2 mb-2">
-                            <Link href={`/pets/${request.pet.slug || request.pet.id}`}>
+                            <Link href={`/pets/${request.pet?.slug || request.pet?.id || '#'}`}>
                               <h3 className="text-xl font-semibold hover:text-primary transition-colors">
-                                {request.pet.name}
+                                {request.pet?.name || 'Unknown Pet'}
                               </h3>
                             </Link>
                             <Badge
@@ -163,29 +163,31 @@ export default function MyRequestsPage() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {request.pet.breed || request.pet.species} • {request.pet.age} {request.pet.ageUnit} • {request.pet.gender}
+                            {request.pet?.breed || request.pet?.species || 'Unknown'} • {request.pet?.age} {request.pet?.ageUnit} • {request.pet?.gender}
                           </p>
-                          <div className="flex items-center text-sm text-muted-foreground mt-1">
-                            <MapPin className="h-3.5 w-3.5 mr-1" />
-                            {request.pet.city}, {request.pet.state}
-                          </div>
+                          {(request.pet?.city || request.pet?.state) && (
+                            <div className="flex items-center text-sm text-muted-foreground mt-1">
+                              <MapPin className="h-3.5 w-3.5 mr-1" />
+                              {[request.pet?.city, request.pet?.state].filter(Boolean).join(', ')}
+                            </div>
+                          )}
                         </div>
 
                         {/* Shelter Info */}
                         <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border-2 border-border">
                           <Avatar className="h-10 w-10 border-2 border-border">
-                            <AvatarImage src={request.shelter.profileImage} />
+                            <AvatarImage src={request.shelter?.profileImage} />
                             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                              {request.shelter.name.charAt(0).toUpperCase()}
+                              {request.shelter?.name?.charAt(0)?.toUpperCase() || 'S'}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{request.shelter.name}</p>
+                            <p className="font-medium text-sm truncate">{request.shelter?.name || 'Unknown Shelter'}</p>
                             <p className="text-xs text-muted-foreground">
-                              {request.shelter.city}, {request.shelter.state}
+                              {[request.shelter?.city, request.shelter?.state].filter(Boolean).join(', ')}
                             </p>
                           </div>
-                          <Link href={`/messages/${request.shelter.id}`}>
+                          <Link href={`/messages/${request.shelter?.id || '#'}`}>
                             <Button variant="outline" size="sm" className="h-8">
                               <Mail className="h-3.5 w-3.5 mr-1.5" />
                               Message

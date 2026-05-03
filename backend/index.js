@@ -182,7 +182,6 @@ const setupRoutes = () => {
   const adminRoutes = require('./src/routes/admin');
   const searchRoutes = require('./src/routes/search');
   const analyticsRoutes = require('./src/routes/analytics');
-  const paymentRoutes = require('./src/routes/payments');
   const lostFoundRoutes = require('./src/routes/lostFound');
   const appointmentRoutes = require('./src/routes/appointments');
 
@@ -206,7 +205,6 @@ const setupRoutes = () => {
   app.use(`${apiV1}/admin`, adminRoutes);
   app.use(`${apiV1}/search`, searchRoutes);
   app.use(`${apiV1}/analytics`, analyticsRoutes);
-  app.use(`${apiV1}/payments`, paymentRoutes);
   app.use(`${apiV1}/lost-found`, lostFoundRoutes);
   app.use(`${apiV1}/appointments`, appointmentRoutes);
 
