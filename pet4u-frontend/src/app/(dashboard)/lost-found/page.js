@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog';
@@ -16,13 +16,12 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  Search, Plus, MapPin, Calendar, Phone, Mail, CheckCircle,
+  Plus, MapPin, Calendar, Phone, Mail, CheckCircle,
   AlertTriangle, Dog, Cat, Bird, PawPrint, Loader2, X
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const SPECIES_OPTIONS = ['dog', 'cat', 'bird', 'rabbit', 'other'];
-const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const SpeciesIcon = ({ species }) => {
   const cls = 'h-4 w-4';
@@ -285,7 +284,8 @@ export default function LostFoundPage() {
         : await lostFoundAPI.getReports(params);
 
       if (res.success) {
-        setReports(res.data.data.reports || res.data.data || []);
+        const payload = res.data?.data;
+        setReports(Array.isArray(payload) ? payload : (payload?.reports ?? []));
       }
     } catch {
       toast.error('Failed to load reports.');
@@ -294,7 +294,9 @@ export default function LostFoundPage() {
     }
   };
 
-  useEffect(() => { loadReports(); }, [activeTab, filters]);
+  // Destructure primitives so the effect only re-runs when a value actually changes
+  const { type: fType, species: fSpecies, city: fCity, state: fState, status: fStatus } = filters;
+  useEffect(() => { loadReports(); }, [activeTab, fType, fSpecies, fCity, fState, fStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleResolve = async (reportId) => {
     const res = await lostFoundAPI.resolveReport(reportId);
@@ -352,37 +354,46 @@ export default function LostFoundPage() {
       {/* Filters */}
       {activeTab === 'all' && (
         <div className="flex flex-wrap gap-2">
-          <Select value={filters.type} onValueChange={v => setFilters(f => ({ ...f, type: v }))}>
+          <Select
+            value={filters.type || '_all'}
+            onValueChange={v => setFilters(f => ({ ...f, type: v === '_all' ? '' : v }))}
+          >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All types</SelectItem>
-              <SelectItem value="lost">🔴 Lost</SelectItem>
-              <SelectItem value="found">🟢 Found</SelectItem>
+              <SelectItem value="_all">All types</SelectItem>
+              <SelectItem value="lost">Lost</SelectItem>
+              <SelectItem value="found">Found</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={filters.species} onValueChange={v => setFilters(f => ({ ...f, species: v }))}>
+          <Select
+            value={filters.species || '_all'}
+            onValueChange={v => setFilters(f => ({ ...f, species: v === '_all' ? '' : v }))}
+          >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="All species" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All species</SelectItem>
+              <SelectItem value="_all">All species</SelectItem>
               {SPECIES_OPTIONS.map(s => (
                 <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Select value={filters.status} onValueChange={v => setFilters(f => ({ ...f, status: v }))}>
+          <Select
+            value={filters.status || '_all'}
+            onValueChange={v => setFilters(f => ({ ...f, status: v === '_all' ? '' : v }))}
+          >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="_all">All</SelectItem>
             </SelectContent>
           </Select>
 
