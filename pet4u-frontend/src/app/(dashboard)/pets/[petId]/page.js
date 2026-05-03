@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPetById, clearCurrentPet } from '@/lib/store/slices/petSlice';
 import { createAdoptionRequest } from '@/lib/store/slices/adoptionSlice';
+import { addFavorite, removeFavorite, checkFavorite } from '@/lib/store/slices/favoriteSlice';
 import { appointmentsAPI } from '@/lib/api/appointments';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,8 @@ export default function PetDetailPage() {
   const { currentPet, isLoading, error } = useSelector((state) => state.pets);
   const { user } = useSelector((state) => state.auth);
 
+  const { favoritedPetIds } = useSelector((state) => state.favorites);
+
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -80,9 +83,16 @@ export default function PetDetailPage() {
   useEffect(() => {
     if (params?.petId) {
       dispatch(fetchPetById(params.petId));
+      if (user) dispatch(checkFavorite(params.petId));
     }
     return () => { dispatch(clearCurrentPet()); };
-  }, [params?.petId, dispatch]);
+  }, [params?.petId, dispatch, user]);
+
+  useEffect(() => {
+    if (currentPet) {
+      setIsFavorite(favoritedPetIds.includes(currentPet.id));
+    }
+  }, [favoritedPetIds, currentPet]);
 
   const loadAvailability = useCallback(async (shelterId) => {
     setSlotsLoading(true);
@@ -180,10 +190,15 @@ export default function PetDetailPage() {
     return `${pet.age} ${unit}${pet.age > 1 ? 's' : ''} old`;
   };
 
-  const handleFavoriteToggle = () => {
+  const handleFavoriteToggle = async () => {
     if (!user) { toast.error('Please login to save favorites'); router.push('/login'); return; }
-    setIsFavorite(!isFavorite);
-    toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+    if (isFavorite) {
+      await dispatch(removeFavorite(pet.id)).unwrap();
+      toast.success('Removed from favorites');
+    } else {
+      await dispatch(addFavorite(pet.id)).unwrap();
+      toast.success('Added to favorites');
+    }
   };
 
   const handleShare = async () => {

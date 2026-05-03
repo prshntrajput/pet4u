@@ -1,8 +1,8 @@
 const { createId } = require('@paralleldrive/cuid2');
 const { db } = require('../config/database');
-const { users, shelters } = require('../models');
+const { users, shelters, pets } = require('../models');
 const { logger } = require('../config/logger');
-const { eq, and, sql } = require('drizzle-orm');
+const { eq, and, sql, gt } = require('drizzle-orm');
 
 const shelterController = {
   // Create shelter profile
@@ -413,8 +413,19 @@ const shelterController = {
     const userId = req.user.userId;
 
     try {
-      // Check if shelter has any pets
-      // TODO: Add check for active pets when pet module is implemented
+      // Block deletion if shelter has active pet listings
+      const activePets = await db
+        .select({ count: sql`count(*)` })
+        .from(pets)
+        .where(and(eq(pets.ownerId, userId), eq(pets.adoptionStatus, 'available')));
+
+      if (parseInt(activePets[0].count) > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot delete shelter profile with ${activePets[0].count} active pet listing(s). Please update or remove them first.`,
+          requestId
+        });
+      }
 
       // Delete shelter profile
       const deletedShelter = await db

@@ -4,6 +4,7 @@ const { users, shelters } = require('../models');
 const { logger } = require('../config/logger');
 const { eq, and } = require('drizzle-orm');
 const { cloudinaryUtils } = require('../config/cloudinary');
+const jwtUtils = require('../utils/jwt');
 
 const userController = {
   // Get user profile
@@ -467,7 +468,12 @@ const userController = {
         .delete(users)
         .where(eq(users.id, userId));
 
-      // TODO: Invalidate all user sessions/tokens
+      // Invalidate all refresh tokens and blacklist the current access token
+      await jwtUtils.removeAllRefreshTokens(userId);
+      const currentToken = req.headers.authorization?.split(' ')[1];
+      if (currentToken) {
+        await jwtUtils.blacklistAccessToken(currentToken, 900);
+      }
 
       logger.info('Account deleted successfully', { userId, requestId });
 
