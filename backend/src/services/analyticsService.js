@@ -1,7 +1,7 @@
 const { db } = require('../config/database');
 const { pets, adoptionRequests, petFavorites, messages } = require('../models');
 const { logger } = require('../config/logger');
-const { eq, and, sql, gte, lte, count } = require('drizzle-orm');
+const { eq, and, sql, gte, desc } = require('drizzle-orm');
 
 const analyticsService = {
   // Get shelter analytics
@@ -49,10 +49,18 @@ const analyticsService = {
 
       // Most viewed pets
       const mostViewedPets = await db
-        .select()
+        .select({
+          id: pets.id,
+          name: pets.name,
+          species: pets.species,
+          breed: pets.breed,
+          adoptionStatus: pets.adoptionStatus,
+          viewCount: pets.viewCount,
+          primaryImage: pets.primaryImage,
+        })
         .from(pets)
         .where(eq(pets.ownerId, shelterId))
-        .orderBy(sql`${pets.viewCount} DESC`)
+        .orderBy(desc(pets.viewCount))
         .limit(5);
 
       // Recent activity (last 30 days)

@@ -41,7 +41,7 @@ const analyticsController = {
       });
 
     } catch (error) {
-      logger.error('Get shelter analytics error:', { error: error.message, shelterId, requestId });
+      logger.error('Get shelter analytics error:', { error: error.message, stack: error.stack, shelterId, requestId });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch analytics',
@@ -87,7 +87,7 @@ const analyticsController = {
       });
 
     } catch (error) {
-      logger.error('Get pet metrics error:', { error: error.message, petId, requestId });
+      logger.error('Get pet metrics error:', { error: error.message, stack: error.stack, petId, requestId });
       res.status(500).json({
         success: false,
         message: 'Failed to fetch pet metrics',
