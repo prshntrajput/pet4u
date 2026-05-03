@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PawPrint, Search, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Search, Shield, Calendar, Sparkles } from 'lucide-react';
 import PetCard from '@/app/_component/pets/PetCard';
 import { petAPI } from '@/lib/api/pets';
 
@@ -12,287 +12,294 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadFeaturedPets();
+    petAPI
+      .getAllPets({ limit: 8, sortBy: 'createdAt', order: 'desc' })
+      .then((r) => r.success && setFeaturedPets(r.data.data.pets))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const loadFeaturedPets = async () => {
-    try {
-      const response = await petAPI.getAllPets({ limit: 8, sortBy: 'createdAt', order: 'desc' });
-      if (response.success) {
-        setFeaturedPets(response.data.data.pets);
-      }
-    } catch (error) {
-      console.error('Failed to load featured pets:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground">
 
-      {/* ── Hero ── */}
-      <section className="relative min-h-[92vh] flex items-center py-20 overflow-hidden">
-        {/* Sky-blue ambient blobs */}
-        <div className="absolute -top-24 -left-44 w-[560px] h-[560px] rounded-full bg-primary/25 blur-3xl" />
-        <div className="absolute -bottom-24 -right-44 w-[460px] h-[460px] rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-primary/6 blur-3xl" />
-        {/* Cloud-like decorative circles (like the image) */}
-        <div className="absolute top-16 right-24 w-24 h-24 rounded-full bg-white/60 blur-xl" />
-        <div className="absolute top-32 right-48 w-14 h-14 rounded-full bg-white/50 blur-lg" />
-        <div className="absolute bottom-20 left-20 w-20 h-20 rounded-full bg-white/40 blur-xl" />
+      {/* ─── Navbar ─── */}
+      <header className="fixed top-0 inset-x-0 z-50 h-14 bg-background/80 backdrop-blur-md border-b border-border flex items-center">
+        <div className="container mx-auto px-4 flex items-center justify-between">
+          <span className="text-lg font-bold tracking-tight">Pet4u</span>
+          <nav className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
+            <Link href="/pets" className="hover:text-foreground transition-colors">Browse pets</Link>
+            <Link href="/lost-found" className="hover:text-foreground transition-colors">Lost &amp; Found</Link>
+            <Link href="/match" className="hover:text-foreground transition-colors">Find match</Link>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-sm">Sign in</Button>
+            </Link>
+            <Link href="/register">
+              <Button size="sm" className="text-sm h-8 px-4">Get started</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
 
-        {/* Paw prints */}
-        <span className="absolute top-12 right-16 text-5xl text-primary/20 rotate-12 select-none pointer-events-none">🐾</span>
-        <span className="absolute bottom-16 left-12 text-4xl text-primary/15 -rotate-12 select-none pointer-events-none">🐾</span>
+      {/* ─── Hero ─── */}
+      <section className="pt-36 pb-24">
+        <div className="container mx-auto px-4 max-w-4xl text-center space-y-7">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/25 bg-primary/6 text-primary text-xs font-semibold tracking-wide uppercase">
+            <Sparkles className="h-3 w-3" />
+            Smart pet adoption for India
+          </div>
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-5xl mx-auto text-center">
+          <h1 className="text-5xl sm:text-6xl md:text-[4.5rem] font-bold leading-[1.06] tracking-tighter">
+            Find a pet that<br />
+            <span className="text-primary">fits your life</span>
+          </h1>
 
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white shadow-md border border-primary/20 mb-8">
-              <PawPrint className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-primary">Every pet deserves a loving home</span>
-            </div>
+          <p className="text-lg text-muted-foreground max-w-lg mx-auto leading-relaxed">
+            Browse verified shelters, use our matching quiz, and adopt with full confidence — from first browse to welcome home.
+          </p>
 
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-[1.02] tracking-tighter">
-              <span className="text-foreground">Find Your </span>
-              <span className="text-foreground">Dream</span>
-              <br />
-              <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent">
-                  Pet Here
-                </span>
-                <span className="absolute -bottom-1 left-0 w-full h-[3px] bg-gradient-to-r from-primary to-blue-400 rounded-full opacity-50" />
-              </span>
-            </h1>
-
-            <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-              Connect with trusted shelters. Give a pet the forever home they deserve.
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto px-10 h-14 text-base font-semibold rounded-2xl shadow-lg shadow-primary/35 hover:shadow-xl hover:shadow-primary/45 hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/pets">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto px-10 h-14 text-base border-2 rounded-2xl bg-white/80 hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <Search className="mr-2 h-5 w-5" />
-                  Browse Pets
-                </Button>
-              </Link>
-            </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+            <Link href="/register">
+              <Button size="lg" className="h-11 px-7 text-sm font-semibold">
+                Start adopting <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/pets">
+              <Button size="lg" variant="outline" className="h-11 px-7 text-sm">
+                <Search className="mr-2 h-4 w-4" />
+                Browse pets
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-3 gap-4 max-w-3xl mx-auto">
+      {/* ─── Stats ─── */}
+      <section className="border-y border-border bg-muted/40">
+        <div className="container mx-auto px-4 py-10">
+          <div className="grid grid-cols-3 max-w-xl mx-auto divide-x divide-border">
             {[
-              { value: '150+', label: 'Pets Available', emoji: '🐶', bg: 'bg-blue-50', text: 'text-primary' },
-              { value: '45',   label: 'Verified Shelters', emoji: '🏠', bg: 'bg-pink-50', text: 'text-pink-500' },
-              { value: '230+', label: 'Happy Adoptions', emoji: '❤️', bg: 'bg-teal-50', text: 'text-teal-500' },
-            ].map((stat, i) => (
-              <div key={i} className={`${stat.bg} rounded-3xl p-5 text-center group cursor-default hover:shadow-md transition-all duration-200`}>
-                <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">{stat.emoji}</div>
-                <div className={`text-3xl md:text-4xl font-bold mb-1 ${stat.text}`}>
-                  {stat.value}
-                </div>
-                <div className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
-                  {stat.label}
-                </div>
+              { value: '150+', label: 'Pets available' },
+              { value: '45',   label: 'Verified shelters' },
+              { value: '230+', label: 'Adoptions completed' },
+            ].map((s, i) => (
+              <div key={i} className="text-center px-6 first:pl-0 last:pr-0">
+                <div className="text-2xl sm:text-3xl font-bold text-foreground">{s.value}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Featured Pets ── */}
-      <section className="py-24">
+      {/* ─── Featured Pets ─── */}
+      <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-5">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-primary">Newly Listed</span>
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">Newly listed</p>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Recently added pets</h2>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-              Meet Your New{' '}
-              <span className="bg-gradient-to-r from-primary to-accent-foreground bg-clip-text text-transparent">
-                Best Friend
-              </span>
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Adorable pets waiting for their forever homes
-            </p>
+            <Link href="/pets" className="hidden sm:block">
+              <Button variant="ghost" size="sm" className="text-sm gap-1.5">
+                View all <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="relative h-16 w-16">
-                <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-                <PawPrint className="absolute inset-0 m-auto h-6 w-6 text-primary/50" />
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl bg-muted aspect-[3/4] animate-pulse"
+                />
+              ))}
             </div>
-          ) : (
+          ) : featuredPets.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 mb-12">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {featuredPets.slice(0, 8).map((pet) => (
                   <PetCard key={pet.id} pet={pet} />
                 ))}
               </div>
-              <div className="text-center">
+              <div className="sm:hidden mt-8 text-center">
                 <Link href="/pets">
-                  <Button size="lg" variant="outline" className="border-2 px-8 h-12 hover:-translate-y-0.5 transition-all duration-200">
-                    View All Pets
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                  <Button variant="outline" className="gap-2">
+                    View all pets <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
               </div>
             </>
+          ) : (
+            <div className="text-center py-16 text-muted-foreground">
+              <p>No pets listed yet. Be the first shelter to add one.</p>
+            </div>
           )}
         </div>
       </section>
 
-      {/* ── Why Pet4u ── */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-14">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-              Why{' '}
-              <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-                Pet4u?
-              </span>
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Everything you need for a successful adoption
+      {/* ─── Features ─── */}
+      <section className="py-20 bg-muted/30 border-y border-border">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-14 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Why Pet4u</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Built for confident adoption</h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              Everything you need to find, connect, and adopt — no back-and-forth, no confusion.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {[
               {
-                emoji: '💝',
-                title: 'Find Your Match',
-                description: 'Browse pets by species, size, and personality — until one just feels right.',
-                bg: 'bg-pink-50',
-                iconBg: 'bg-pink-100',
+                icon: Sparkles,
+                title: 'Smart matching quiz',
+                desc: 'Answer a few questions about your home and lifestyle. We score every available pet and surface the best fits for you.',
               },
               {
-                emoji: '🛡️',
-                title: 'Trusted Shelters',
-                description: 'Every shelter on Pet4u is verified — dedicated to animal welfare and ethical adoption.',
-                bg: 'bg-blue-50',
-                iconBg: 'bg-blue-100',
+                icon: Shield,
+                title: 'Verified shelters only',
+                desc: 'Every shelter on Pet4u is reviewed before going live. You see listings from organisations with a genuine commitment to animal welfare.',
               },
               {
-                emoji: '⚡',
-                title: 'Simple Process',
-                description: 'From first browse to welcome home — the whole process is streamlined and stress-free.',
-                bg: 'bg-teal-50',
-                iconBg: 'bg-teal-100',
+                icon: Calendar,
+                title: 'Appointments built in',
+                desc: 'Request meet-and-greet sessions directly from a pet\'s page. Shelters confirm, you get a reminder — no phone tag.',
               },
             ].map((f, i) => (
               <div
                 key={i}
-                className={`${f.bg} rounded-3xl p-8 text-center hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300`}
+                className="bg-card border border-border rounded-2xl p-6 space-y-3 hover:border-primary/40 transition-colors"
               >
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl ${f.iconBg} text-4xl mb-5`}>
-                  {f.emoji}
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <f.icon className="h-4.5 w-4.5 text-primary" style={{ width: '18px', height: '18px' }} />
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-900">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
+                <h3 className="font-semibold text-sm text-foreground">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="py-24">
+      {/* ─── How it works ─── */}
+      <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">How It Works</h2>
-            <p className="text-muted-foreground text-lg">Four simple steps to your new best friend</p>
+          <div className="text-center mb-14 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Process</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">How adoption works</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             {[
-              { emoji: '✍️', title: 'Create Account',  description: 'Sign up in minutes — free forever' },
-              { emoji: '🔍', title: 'Browse Pets',     description: 'Filter by species, location & more' },
-              { emoji: '💌', title: 'Send Request',    description: 'Connect directly with the shelter' },
-              { emoji: '🏡', title: 'Welcome Home',    description: 'Give your new friend a forever home' },
-            ].map((item, i) => (
-              <div key={i} className="relative text-center group">
-                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 border-2 border-primary/20 group-hover:border-primary/70 group-hover:bg-primary/18 transition-all duration-300 mb-5 shadow-md">
-                  <span className="text-3xl">{item.emoji}</span>
-                  <span className="absolute -top-3 -right-3 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shadow-lg">
-                    {i + 1}
-                  </span>
+              {
+                n: '01',
+                title: 'Create a free account',
+                desc: 'Sign up as an adopter in under a minute. No fees, ever.',
+              },
+              {
+                n: '02',
+                title: 'Browse or take the quiz',
+                desc: 'Filter by species, city, size — or let our matching quiz rank pets by how well they suit your home.',
+              },
+              {
+                n: '03',
+                title: 'Connect with the shelter',
+                desc: 'Message the shelter directly and book a meet-and-greet from the pet\'s page.',
+              },
+              {
+                n: '04',
+                title: 'Bring your pet home',
+                desc: 'Submit your adoption application, get approved, and welcome your new companion.',
+              },
+            ].map((s, i, arr) => (
+              <div key={i} className="flex gap-5 group">
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="w-9 h-9 rounded-full border-2 border-border group-hover:border-primary flex items-center justify-center transition-colors bg-card">
+                    <span className="text-[11px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                      {s.n}
+                    </span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className="w-px flex-1 bg-border my-2 min-h-[2rem]" />
+                  )}
                 </div>
-                <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-                {i < 3 && (
-                  <div className="hidden lg:block absolute top-10 left-[calc(50%+3rem)] w-[calc(100%-6rem)] h-px bg-gradient-to-r from-primary/50 to-primary/10 -z-10" />
-                )}
+                <div className="pb-8 pt-1.5">
+                  <h3 className="font-semibold text-sm text-foreground mb-1">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
-      <section className="relative py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-accent-foreground" />
-        <div className="absolute inset-0 select-none pointer-events-none overflow-hidden">
-          <span className="absolute top-6  left-12  text-6xl opacity-20 rotate-12">🐾</span>
-          <span className="absolute bottom-6  right-12 text-5xl opacity-20 -rotate-12">🐾</span>
-          <span className="absolute top-1/2 left-1/4  text-3xl opacity-15 rotate-45">🐾</span>
-          <span className="absolute top-1/3 right-1/4 text-4xl opacity-15 -rotate-30">🐾</span>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="text-6xl mb-6">🐶</div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-5 text-primary-foreground leading-tight tracking-tight">
-              A pet is waiting for you right now
-            </h2>
-            <p className="text-xl mb-10 text-primary-foreground/80 max-w-xl mx-auto leading-relaxed">
-              Your future companion is already at a shelter, hoping someone like you comes along.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto px-10 h-14 text-base font-semibold bg-white text-primary hover:bg-white/92 shadow-2xl hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  Find My Pet
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/pets">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto px-10 h-14 border-2 border-white/50 text-primary hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  Browse Available Pets
-                </Button>
-              </Link>
+      {/* ─── Lost & Found banner ─── */}
+      <section className="py-12 border-y border-border bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="space-y-1 text-center sm:text-left">
+              <h3 className="font-semibold text-foreground">Lost or found a pet?</h3>
+              <p className="text-sm text-muted-foreground">
+                Report a lost animal or help reunite a found pet with its family. Free and open to everyone.
+              </p>
             </div>
+            <Link href="/lost-found" className="shrink-0">
+              <Button variant="outline" className="gap-2">
+                View reports <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
+
+      {/* ─── CTA ─── */}
+      <section className="py-24 bg-foreground">
+        <div className="container mx-auto px-4 text-center max-w-xl">
+          <h2 className="text-3xl sm:text-4xl font-bold text-background tracking-tight mb-4 leading-tight">
+            A pet is waiting for you right now
+          </h2>
+          <p className="text-background/55 text-sm sm:text-base mb-9 leading-relaxed">
+            Thousands of animals in shelters are hoping for a second chance.
+            Yours could be among them.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/register">
+              <Button
+                size="lg"
+                className="h-11 px-7 text-sm font-semibold bg-background text-foreground hover:bg-background/92"
+              >
+                Find my pet <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/pets">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-11 px-7 text-sm border-background/25 text-background hover:bg-background/10 hover:text-background"
+              >
+                Browse listings
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className="border-t border-border py-8">
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-sm font-bold text-foreground">Pet4u</span>
+          <p className="text-xs text-muted-foreground order-last sm:order-none">
+            © 2025 Pet4u. Making pet adoption simple.
+          </p>
+          <div className="flex items-center gap-5 text-xs text-muted-foreground">
+            <Link href="/login"    className="hover:text-foreground transition-colors">Sign in</Link>
+            <Link href="/register" className="hover:text-foreground transition-colors">Register</Link>
+            <Link href="/pets"     className="hover:text-foreground transition-colors">Browse</Link>
+          </div>
+        </div>
+      </footer>
 
     </div>
   );

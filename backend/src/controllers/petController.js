@@ -866,6 +866,144 @@ uploadPetImages: async (req, res) => {
       });
     }
   },
+  // Pet matching algorithm — score pets against adopter's lifestyle quiz answers
+  matchPets: async (req, res) => {
+    const requestId = req.requestId;
+    try {
+      const {
+        livingSpace,       // 'apartment' | 'house_small_yard' | 'house_large_yard'
+        activityLevel,     // 'low' | 'moderate' | 'high'
+        hasChildren,       // boolean
+        hasOtherPets,      // boolean
+        hasOtherDogs,      // boolean
+        hasOtherCats,      // boolean
+        experienceLevel,   // 'first_time' | 'some_experience' | 'experienced'
+        preferredSpecies,  // 'any' | 'dog' | 'cat' | 'bird' | 'rabbit' | 'other'
+        preferredSize,     // 'any' | 'small' | 'medium' | 'large'
+        preferredAge,      // 'any' | 'young' | 'adult' | 'senior'
+        city,
+        state
+      } = req.body;
+
+      // Build base query — only available, active, approved pets
+      const conditions = [
+        eq(pets.adoptionStatus, 'available'),
+        eq(pets.isActive, true),
+        eq(pets.moderationStatus, 'approved')
+      ];
+
+      if (preferredSpecies && preferredSpecies !== 'any') {
+        conditions.push(eq(pets.species, preferredSpecies));
+      }
+      if (city) conditions.push(eq(pets.city, city));
+      if (state) conditions.push(eq(pets.state, state));
+
+      const allPets = await db
+        .select({
+          id: pets.id, name: pets.name, species: pets.species, breed: pets.breed,
+          size: pets.size, age: pets.age, ageUnit: pets.ageUnit, gender: pets.gender,
+          energyLevel: pets.energyLevel, goodWithKids: pets.goodWithKids,
+          goodWithPets: pets.goodWithPets, goodWithDogs: pets.goodWithDogs,
+          goodWithCats: pets.goodWithCats, houseTrained: pets.houseTrained,
+          trainedLevel: pets.trainedLevel, specialNeeds: pets.specialNeeds,
+          adoptionFee: pets.adoptionFee, primaryImage: pets.primaryImage,
+          description: pets.description, city: pets.city, state: pets.state,
+          isVaccinated: pets.isVaccinated, isNeutered: pets.isNeutered,
+          isSpayed: pets.isSpayed, isUrgent: pets.isUrgent, slug: pets.slug,
+          createdAt: pets.createdAt
+        })
+        .from(pets)
+        .where(and(...conditions))
+        .orderBy(desc(pets.isUrgent), desc(pets.createdAt))
+        .limit(100);
+
+      // Scoring function (max ~100 points)
+      const scorePet = (pet) => {
+        let score = 0;
+
+        // Energy / activity level match (25 pts)
+        const energyMap = {
+          low: ['low'],
+          moderate: ['low', 'medium'],
+          high: ['medium', 'high']
+        };
+        if (activityLevel && pet.energyLevel && energyMap[activityLevel]?.includes(pet.energyLevel)) {
+          score += 25;
+        }
+
+        // Living space vs size (20 pts)
+        const sizeMap = {
+          apartment: ['small', 'medium'],
+          house_small_yard: ['small', 'medium', 'large'],
+          house_large_yard: ['small', 'medium', 'large', 'extra_large']
+        };
+        if (livingSpace && pet.size && sizeMap[livingSpace]?.includes(pet.size)) {
+          score += 20;
+        }
+        // Preferred size bonus (10 pts)
+        if (preferredSize && preferredSize !== 'any' && pet.size === preferredSize) {
+          score += 10;
+        }
+
+        // Children compatibility (15 pts)
+        if (hasChildren && pet.goodWithKids === true) score += 15;
+        if (!hasChildren) score += 5; // no penalty if no kids
+
+        // Other pets compatibility (15 pts)
+        if (hasOtherPets) {
+          if (pet.goodWithPets === true) score += 8;
+          if (hasOtherDogs && pet.goodWithDogs === true) score += 4;
+          if (hasOtherCats && pet.goodWithCats === true) score += 3;
+        } else {
+          score += 10; // bonus — pet doesn't need to be pet-friendly
+        }
+
+        // Experience level (10 pts)
+        const expMap = {
+          first_time: ['not_trained', 'basic'],
+          some_experience: ['basic', 'advanced'],
+          experienced: ['not_trained', 'basic', 'advanced']
+        };
+        if (experienceLevel && pet.trainedLevel && expMap[experienceLevel]?.includes(pet.trainedLevel)) {
+          score += 10;
+        }
+
+        // Preferred age bonus (5 pts)
+        if (preferredAge && preferredAge !== 'any' && pet.age !== null) {
+          const ageInMonths = pet.ageUnit === 'years' ? pet.age * 12 : pet.age;
+          const ageCategory = ageInMonths <= 12 ? 'young' : ageInMonths <= 84 ? 'adult' : 'senior';
+          if (ageCategory === preferredAge) score += 5;
+        }
+
+        // House trained bonus (5 pts)
+        if (pet.houseTrained) score += 5;
+
+        // Urgent pets get a small boost to help them find homes
+        if (pet.isUrgent) score += 3;
+
+        return score;
+      };
+
+      const scoredPets = allPets
+        .map(pet => ({ ...pet, matchScore: scorePet(pet) }))
+        .filter(p => p.matchScore > 10)
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 20);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          matches: scoredPets,
+          totalMatches: scoredPets.length,
+          criteria: { livingSpace, activityLevel, preferredSpecies, preferredSize }
+        },
+        requestId
+      });
+    } catch (error) {
+      logger.error('Pet matching error:', { error: error.message, requestId });
+      res.status(500).json({ success: false, message: 'Matching failed. Please try again.', requestId });
+    }
+  },
 };
 
 module.exports = petController;

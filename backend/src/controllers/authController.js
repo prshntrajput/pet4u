@@ -1,10 +1,12 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { createId } = require('@paralleldrive/cuid2');
 const { db } = require('../config/database');
-const { users, userSessions } = require('../models');
+const { users, userSessions, emailVerificationTokens, passwordResetTokens } = require('../models');
 const jwtUtils = require('../utils/jwt');
 const { logger } = require('../config/logger');
 const { eq, and } = require('drizzle-orm');
+const emailService = require('../services/emailServices');
 
 const authController = {
   // User registration
@@ -68,11 +70,27 @@ const authController = {
         requestId
       });
 
-      // TODO: Send email verification (implement in next phase)
-      
+      // Create and store email verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await db.insert(emailVerificationTokens).values({
+        id: createId(),
+        userId: userData.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        isUsed: false
+      });
+
+      // Send welcome + verification email (non-blocking)
+      emailService.sendWelcomeEmail(userData).catch((err) =>
+        logger.error('Failed to send welcome email', { error: err.message, userId: userData.id })
+      );
+      emailService.sendVerificationEmail(userData, verificationToken).catch((err) =>
+        logger.error('Failed to send verification email', { error: err.message, userId: userData.id })
+      );
+
       res.status(201).json({
         success: true,
-        message: 'Registration successful! Please verify your email.',
+        message: 'Registration successful! Please check your email to verify your account.',
         data: {
           user: userData
         },
@@ -384,6 +402,150 @@ const authController = {
         message: 'Logout failed',
         requestId
       });
+    }
+  },
+
+  // Verify email address via token link
+  verifyEmail: async (req, res) => {
+    const requestId = req.requestId;
+    try {
+      const { token } = req.query;
+      if (!token) {
+        return res.status(400).json({ success: false, message: 'Verification token is required', requestId });
+      }
+
+      const tokenResult = await db
+        .select()
+        .from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.token, token))
+        .limit(1);
+
+      if (tokenResult.length === 0) {
+        return res.status(400).json({ success: false, message: 'Invalid verification token', requestId });
+      }
+
+      const tokenRecord = tokenResult[0];
+
+      if (tokenRecord.isUsed) {
+        return res.status(400).json({ success: false, message: 'Token has already been used', requestId });
+      }
+
+      if (new Date(tokenRecord.expiresAt) < new Date()) {
+        return res.status(400).json({ success: false, message: 'Verification token has expired', requestId });
+      }
+
+      // Mark user as verified and token as used
+      await db.update(users)
+        .set({ isVerified: true, emailVerifiedAt: new Date(), updatedAt: new Date() })
+        .where(eq(users.id, tokenRecord.userId));
+
+      await db.update(emailVerificationTokens)
+        .set({ isUsed: true })
+        .where(eq(emailVerificationTokens.id, tokenRecord.id));
+
+      logger.info('Email verified successfully', { userId: tokenRecord.userId, requestId });
+
+      res.status(200).json({ success: true, message: 'Email verified successfully! You can now log in.', requestId });
+    } catch (error) {
+      logger.error('Email verification error:', { error: error.message, requestId });
+      res.status(500).json({ success: false, message: 'Email verification failed', requestId });
+    }
+  },
+
+  // Send password reset email
+  forgotPassword: async (req, res) => {
+    const requestId = req.requestId;
+    try {
+      const { email } = req.body;
+
+      const userResult = await db
+        .select({ id: users.id, email: users.email, name: users.name, isActive: users.isActive })
+        .from(users)
+        .where(eq(users.email, email.toLowerCase()))
+        .limit(1);
+
+      // Always return success to prevent email enumeration
+      if (userResult.length === 0 || !userResult[0].isActive) {
+        return res.status(200).json({
+          success: true,
+          message: 'If this email is registered, you will receive a password reset link.',
+          requestId
+        });
+      }
+
+      const user = userResult[0];
+      const resetToken = crypto.randomBytes(32).toString('hex');
+
+      await db.insert(passwordResetTokens).values({
+        id: createId(),
+        userId: user.id,
+        token: resetToken,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+        isUsed: false
+      });
+
+      emailService.sendPasswordResetEmail(user, resetToken).catch((err) =>
+        logger.error('Failed to send password reset email', { error: err.message, userId: user.id })
+      );
+
+      logger.info('Password reset token created', { userId: user.id, requestId });
+
+      res.status(200).json({
+        success: true,
+        message: 'If this email is registered, you will receive a password reset link.',
+        requestId
+      });
+    } catch (error) {
+      logger.error('Forgot password error:', { error: error.message, requestId });
+      res.status(500).json({ success: false, message: 'Request failed. Please try again.', requestId });
+    }
+  },
+
+  // Reset password with token
+  resetPassword: async (req, res) => {
+    const requestId = req.requestId;
+    try {
+      const { token, newPassword } = req.body;
+
+      const tokenResult = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(eq(passwordResetTokens.token, token))
+        .limit(1);
+
+      if (tokenResult.length === 0) {
+        return res.status(400).json({ success: false, message: 'Invalid reset token', requestId });
+      }
+
+      const tokenRecord = tokenResult[0];
+
+      if (tokenRecord.isUsed) {
+        return res.status(400).json({ success: false, message: 'Token has already been used', requestId });
+      }
+
+      if (new Date(tokenRecord.expiresAt) < new Date()) {
+        return res.status(400).json({ success: false, message: 'Reset token has expired', requestId });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      await db.update(users)
+        .set({ password: hashedPassword, updatedAt: new Date() })
+        .where(eq(users.id, tokenRecord.userId));
+
+      await db.update(passwordResetTokens)
+        .set({ isUsed: true })
+        .where(eq(passwordResetTokens.id, tokenRecord.id));
+
+      // Invalidate all existing sessions for security
+      await jwtUtils.removeAllRefreshTokens(tokenRecord.userId);
+
+      logger.info('Password reset successfully', { userId: tokenRecord.userId, requestId });
+
+      res.status(200).json({ success: true, message: 'Password reset successfully. Please log in.', requestId });
+    } catch (error) {
+      logger.error('Reset password error:', { error: error.message, requestId });
+      res.status(500).json({ success: false, message: 'Password reset failed. Please try again.', requestId });
     }
   },
 

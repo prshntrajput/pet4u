@@ -102,6 +102,52 @@ const emailService = {
     });
   },
 
+  // Email verification link
+  sendVerificationEmail: async (user, token) => {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #2563eb;">Verify Your Email 🐾</h1>
+        <p>Hi ${user.name},</p>
+        <p>Please verify your email address by clicking the button below. This link expires in 24 hours.</p>
+        <a href="${verificationUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+          Verify Email Address
+        </a>
+        <p style="color: #666; font-size: 14px;">If you did not create an account, please ignore this email.</p>
+        <p style="color: #999; font-size: 12px;">Link: ${verificationUrl}</p>
+      </div>
+    `;
+    return emailService.sendEmail({
+      to: user.email,
+      subject: 'Verify your PET4U email address',
+      html,
+      text: `Verify your email: ${verificationUrl}`,
+    });
+  },
+
+  // Password reset email
+  sendPasswordResetEmail: async (user, token) => {
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #dc2626;">Reset Your Password 🔒</h1>
+        <p>Hi ${user.name},</p>
+        <p>We received a request to reset your password. Click below to set a new password. This link expires in 1 hour.</p>
+        <a href="${resetUrl}" style="display: inline-block; background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+          Reset Password
+        </a>
+        <p style="color: #666; font-size: 14px;">If you did not request a password reset, you can safely ignore this email.</p>
+        <p style="color: #999; font-size: 12px;">Link: ${resetUrl}</p>
+      </div>
+    `;
+    return emailService.sendEmail({
+      to: user.email,
+      subject: 'Reset your PET4U password',
+      html,
+      text: `Reset your password: ${resetUrl}`,
+    });
+  },
+
   // Request approved notification
   sendRequestApprovedEmail: async (adopter, pet, shelter, meetingDetails) => {
     const html = `
@@ -131,6 +177,63 @@ const emailService = {
       text: `Your adoption request for ${pet.name} has been approved!`,
     });
   },
+
+  // Appointment request notification to shelter
+  sendAppointmentRequestEmail: async (shelter, adopter, pet, appointment) => {
+    const dateStr = new Date(appointment.scheduledDate).toLocaleDateString('en-IN', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #2563eb;">New Meet-and-Greet Request 📅</h1>
+        <p>Hi ${shelter.name},</p>
+        <p><strong>${adopter.name}</strong> has requested an appointment to meet <strong>${pet.name}</strong>.</p>
+        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+          <p><strong>Date:</strong> ${dateStr}</p>
+          <p><strong>Time:</strong> ${appointment.startTime} – ${appointment.endTime}</p>
+          <p><strong>Adopter:</strong> ${adopter.name} (${adopter.email})</p>
+        </div>
+        <a href="${process.env.FRONTEND_URL}/appointments" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+          View Appointment
+        </a>
+      </div>
+    `;
+    return emailService.sendEmail({
+      to: shelter.email,
+      subject: `New Meet-and-Greet Request for ${pet.name}`,
+      html,
+      text: `${adopter.name} wants to meet ${pet.name} on ${dateStr}.`
+    });
+  },
+
+  // Appointment confirmed notification to adopter
+  sendAppointmentConfirmedEmail: async (adopter, pet, shelter, appointment) => {
+    const dateStr = new Date(appointment.scheduledDate).toLocaleDateString('en-IN', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #10b981;">Appointment Confirmed! ✅</h1>
+        <p>Hi ${adopter.name},</p>
+        <p>Your meet-and-greet with <strong>${pet.name}</strong> at ${shelter.name} has been confirmed.</p>
+        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+          <p><strong>Date:</strong> ${dateStr}</p>
+          <p><strong>Time:</strong> ${appointment.startTime} – ${appointment.endTime}</p>
+          ${appointment.location ? `<p><strong>Location:</strong> ${appointment.location}</p>` : ''}
+          ${appointment.isVirtual && appointment.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${appointment.meetingLink}">${appointment.meetingLink}</a></p>` : ''}
+        </div>
+        <a href="${process.env.FRONTEND_URL}/appointments" style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+          View Appointment
+        </a>
+      </div>
+    `;
+    return emailService.sendEmail({
+      to: adopter.email,
+      subject: `Appointment Confirmed – Meet ${pet.name}!`,
+      html,
+      text: `Your appointment to meet ${pet.name} on ${dateStr} is confirmed.`
+    });
+  }
 };
 
 module.exports = emailService;

@@ -6,23 +6,26 @@ import { useRouter, usePathname } from 'next/navigation';
 import { logoutUser } from '@/lib/store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import NotificationDropdown from '../_component/notifications/NotificationDropDown';
-import { 
-  LogOut, 
-  Home, 
-  Heart, 
-  Settings, 
-  PawPrint, 
-  List, 
-  Plus, 
-  MessageSquare, 
-  Inbox, 
+import {
+  LogOut,
+  Home,
+  Heart,
+  Settings,
+  PawPrint,
+  List,
+  Plus,
+  MessageSquare,
+  Inbox,
   FileText,
   Shield,
-  Search, 
-  TrendingUp, 
+  Search,
+  TrendingUp,
   CreditCard,
   Menu,
-  X
+  X,
+  AlertTriangle,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -73,22 +76,25 @@ export default function DashboardLayout({ children }) {
     if (user?.role === 'shelter') {
       return [
         homeItem,
-        { href: '/my-pets',           icon: List,  label: 'My Pets',  show: true },
-        { href: '/pets/create',        icon: Plus,  label: 'Add Pet',  show: true, hideOnMobile: true },
-        { href: '/adoption-requests',  icon: Inbox, label: 'Requests', show: true },
+        { href: '/my-pets',           icon: List,      label: 'My Pets',     show: true },
+        { href: '/pets/create',        icon: Plus,      label: 'Add Pet',     show: true, hideOnMobile: true },
+        { href: '/adoption-requests',  icon: Inbox,     label: 'Requests',    show: true },
+        { href: '/appointments',       icon: Calendar,  label: 'Appointments', show: true },
       ];
     } else if (user?.role === 'adopter') {
       return [
         homeItem,
         browseItem,
-        { href: '/favorites',   icon: Heart,     label: 'Favorites', show: true },
-        { href: '/my-requests', icon: FileText,   label: 'Requests',  show: true },
+        { href: '/match',       icon: Sparkles,     label: 'Find Match', show: true },
+        { href: '/favorites',   icon: Heart,        label: 'Favorites',  show: true },
+        { href: '/my-requests', icon: FileText,     label: 'Requests',   show: true },
+        { href: '/appointments', icon: Calendar,    label: 'Visits',     show: true },
       ];
     } else if (user?.role === 'admin') {
       return [
         homeItem,
         browseItem,
-        { href: '/admin',     icon: Shield,    label: 'Admin',     show: true },
+        { href: '/admin',     icon: Shield,     label: 'Admin',     show: true },
         { href: '/analytics', icon: TrendingUp, label: 'Analytics', show: true },
       ];
     }
@@ -189,6 +195,12 @@ export default function DashboardLayout({ children }) {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
+                    <Link href="/lost-found" className="cursor-pointer">
+                      <AlertTriangle className="mr-2 h-4 w-4" />
+                      Lost & Found
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/payments" className="cursor-pointer">
                       <CreditCard className="mr-2 h-4 w-4" />
                       Payments
@@ -275,6 +287,15 @@ export default function DashboardLayout({ children }) {
                   </Link>
                 </>
               )}
+
+              <Link
+                href="/lost-found"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent"
+              >
+                <AlertTriangle size={20} />
+                <span className="font-medium">Lost & Found</span>
+              </Link>
 
               <Link
                 href="/payments"

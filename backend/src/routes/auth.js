@@ -44,28 +44,21 @@ router.get('/verify',
   authController.verify
 );
 
-// Forgot password route (will implement in next phase)
-router.post('/forgot-password', 
-  validate(forgotPasswordValidation),
-  (req, res) => {
-    res.status(501).json({
-      success: false,
-      message: 'Forgot password feature coming soon',
-      requestId: req.requestId
-    });
-  }
+// Email verification route
+router.get('/verify-email',
+  authController.verifyEmail
 );
 
-// Reset password route (will implement in next phase)
-router.post('/reset-password', 
+// Forgot password route
+router.post('/forgot-password',
+  validate(forgotPasswordValidation),
+  authController.forgotPassword
+);
+
+// Reset password route
+router.post('/reset-password',
   validate(resetPasswordValidation),
-  (req, res) => {
-    res.status(501).json({
-      success: false,
-      message: 'Reset password feature coming soon',
-      requestId: req.requestId
-    });
-  }
+  authController.resetPassword
 );
 
 module.exports = router;

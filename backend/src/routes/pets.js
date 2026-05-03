@@ -35,6 +35,11 @@ router.get('/my/listings',
   petController.getMyPets
 );
 
+// Pet matching quiz endpoint
+router.post('/match/quiz',
+  petController.matchPets
+);
+
 // Create new pet (shelter role only)
 router.post('/',
   requireRole('shelter'),

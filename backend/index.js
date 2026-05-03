@@ -183,7 +183,9 @@ const setupRoutes = () => {
   const searchRoutes = require('./src/routes/search');
   const analyticsRoutes = require('./src/routes/analytics');
   const paymentRoutes = require('./src/routes/payments');
-  
+  const lostFoundRoutes = require('./src/routes/lostFound');
+  const appointmentRoutes = require('./src/routes/appointments');
+
   // Apply strict rate limiting to auth routes
   app.use(`${apiV1}/auth/login`, securityMiddleware.authLimiter);
   app.use(`${apiV1}/auth/register`, securityMiddleware.authLimiter);
@@ -205,7 +207,9 @@ const setupRoutes = () => {
   app.use(`${apiV1}/search`, searchRoutes);
   app.use(`${apiV1}/analytics`, analyticsRoutes);
   app.use(`${apiV1}/payments`, paymentRoutes);
-  
+  app.use(`${apiV1}/lost-found`, lostFoundRoutes);
+  app.use(`${apiV1}/appointments`, appointmentRoutes);
+
   logger.info('✅ API routes configured');
 };
 
