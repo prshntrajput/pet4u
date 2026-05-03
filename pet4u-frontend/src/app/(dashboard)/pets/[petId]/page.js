@@ -24,10 +24,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Heart,
-  MapPin,
-  Calendar,
-  Weight,
-  Ruler,
   Mail,
   Share2,
   ArrowLeft,
@@ -38,6 +34,8 @@ import {
   Clock,
   CalendarCheck,
   PawPrint,
+  Lock,
+  Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
@@ -55,27 +53,35 @@ function getUpcomingDates(dayOfWeek, count = 5) {
   return dates;
 }
 
+function HealthRow({ label, value }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      {value
+        ? <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+        : <XCircle className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+      }
+      <span className={value ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
+    </div>
+  );
+}
+
 export default function PetDetailPage() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
   const { currentPet, isLoading, error } = useSelector((state) => state.pets);
   const { user } = useSelector((state) => state.auth);
-
   const { favoritedPetIds } = useSelector((state) => state.favorites);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Adoption request dialog
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
 
-  // Messaging permission
   const [canMessage, setCanMessage] = useState(false);
 
-  // Visit booking dialog
   const [showVisitDialog, setShowVisitDialog] = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -94,16 +100,12 @@ export default function PetDetailPage() {
   }, [params?.petId, dispatch, user]);
 
   useEffect(() => {
-    if (currentPet) {
-      setIsFavorite(favoritedPetIds.includes(currentPet.id));
-    }
+    if (currentPet) setIsFavorite(favoritedPetIds.includes(currentPet.id));
   }, [favoritedPetIds, currentPet]);
 
-  // Check if current user can message the pet owner
   useEffect(() => {
     if (!currentPet || !user) return;
     const isOwnerCheck = user.id === currentPet.ownerId || user.userId === currentPet.ownerId;
-    // Shelters never need to message themselves; only adopters need the check
     if (isOwnerCheck || user.role !== 'adopter') return;
     messageAPI.canMessage(currentPet.ownerId)
       .then((res) => setCanMessage(res.success && res.data?.data?.canMessage))
@@ -114,9 +116,7 @@ export default function PetDetailPage() {
     setSlotsLoading(true);
     try {
       const res = await appointmentsAPI.getShelterAvailability(shelterId);
-      if (res.success) {
-        setAvailabilitySlots(res.data.data?.slots || []);
-      }
+      if (res.success) setAvailabilitySlots(res.data.data?.slots || []);
     } catch {
       toast.error('Could not load availability.');
     } finally {
@@ -127,10 +127,7 @@ export default function PetDetailPage() {
   const handleOpenVisitDialog = () => {
     if (!user) { toast.error('Please login first'); router.push('/login'); return; }
     if (user.role !== 'adopter') { toast.error('Only adopters can book visits'); return; }
-    setSelectedSlot(null);
-    setSelectedDate(null);
-    setUpcomingDates([]);
-    setVisitNotes('');
+    setSelectedSlot(null); setSelectedDate(null); setUpcomingDates([]); setVisitNotes('');
     setShowVisitDialog(true);
     loadAvailability(pet.ownerId);
   };
@@ -141,15 +138,8 @@ export default function PetDetailPage() {
     setUpcomingDates(getUpcomingDates(slot.dayOfWeek));
   };
 
-  const handleSelectDate = (date) => {
-    setSelectedDate(date);
-  };
-
   const handleBookVisit = async () => {
-    if (!selectedSlot || !selectedDate) {
-      toast.error('Please select a time slot and date');
-      return;
-    }
+    if (!selectedSlot || !selectedDate) { toast.error('Please select a time slot and date'); return; }
     setIsBooking(true);
     try {
       const res = await appointmentsAPI.bookAppointment({
@@ -177,7 +167,7 @@ export default function PetDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -185,7 +175,7 @@ export default function PetDetailPage() {
   if (error || !currentPet) {
     return (
       <div className="text-center py-20">
-        <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+        <AlertCircle className="h-14 w-14 text-destructive mx-auto mb-4" />
         <h2 className="text-2xl font-bold mb-2">Pet Not Found</h2>
         <p className="text-muted-foreground mb-6">{error || 'This pet listing could not be found.'}</p>
         <Button onClick={() => router.push('/pets')}>
@@ -201,9 +191,9 @@ export default function PetDetailPage() {
   const displayImages = images.length > 0 ? images : (pet.primaryImage ? [{ imageUrl: pet.primaryImage }] : []);
 
   const getAgeDisplay = () => {
-    if (!pet.age) return 'Age unknown';
+    if (!pet.age) return 'Unknown';
     const unit = pet.ageUnit === 'years' ? 'year' : 'month';
-    return `${pet.age} ${unit}${pet.age > 1 ? 's' : ''} old`;
+    return `${pet.age} ${unit}${pet.age > 1 ? 's' : ''}`;
   };
 
   const handleFavoriteToggle = async () => {
@@ -259,50 +249,52 @@ export default function PetDetailPage() {
   };
 
   const isOwner = user?.id === pet.ownerId || user?.userId === pet.ownerId;
-  const canAct = user?.role === 'adopter' && !isOwner && pet.adoptionStatus === 'available';
 
   return (
     <>
-      <div className="space-y-6">
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
+      <div className="space-y-4">
+        {/* Back */}
+        <Button variant="ghost" size="sm" onClick={() => router.back()} className="-ml-1">
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
           Back
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Images */}
-          <div className="lg:col-span-2 space-y-4">
-            <Card className="overflow-hidden">
-              <div className="relative aspect-video bg-muted">
-                {displayImages[selectedImageIndex]?.imageUrl ? (
-                  <Image
-                    src={displayImages[selectedImageIndex].imageUrl}
-                    alt={pet.name}
-                    fill
-                    className="object-cover"
-                    priority
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                  <PawPrint className="h-16 w-16 text-muted-foreground/25" />
+        {/* ── Top: Image + Key Info ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+
+          {/* Images – 3/5 */}
+          <div className="lg:col-span-3 space-y-2">
+            <div className="relative rounded-2xl overflow-hidden bg-muted aspect-[4/3]">
+              {displayImages[selectedImageIndex]?.imageUrl ? (
+                <Image
+                  src={displayImages[selectedImageIndex].imageUrl}
+                  alt={pet.name}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <PawPrint className="h-16 w-16 text-muted-foreground/20" />
                 </div>
-                )}
-              </div>
-            </Card>
+              )}
+            </div>
 
             {displayImages.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {displayImages.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImageIndex === index ? 'border-primary scale-105' : 'border-border hover:border-muted-foreground'
+                    className={`relative h-16 w-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
+                      selectedImageIndex === index
+                        ? 'border-primary'
+                        : 'border-border hover:border-muted-foreground'
                     }`}
                   >
                     {image.imageUrl ? (
-                      <Image src={image.imageUrl} alt={`${pet.name} - ${index + 1}`} fill className="object-cover" sizes="100px" />
+                      <Image src={image.imageUrl} alt={`${pet.name} ${index + 1}`} fill className="object-cover" sizes="64px" />
                     ) : (
                       <div className="flex items-center justify-center h-full bg-muted">
                         <PawPrint className="h-5 w-5 text-muted-foreground/25" />
@@ -312,249 +304,229 @@ export default function PetDetailPage() {
                 ))}
               </div>
             )}
-
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">About {pet.name}</h2>
-                  <p className="text-foreground whitespace-pre-wrap">{pet.description || 'No description available.'}</p>
-                </div>
-                {pet.story && (
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">Story</h3>
-                    <p className="text-foreground whitespace-pre-wrap">{pet.story}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-foreground">Health Information</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="flex items-center space-x-2">
-                    {pet.isVaccinated ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                    <span className="text-sm">Vaccinated</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {pet.isNeutered || pet.isSpayed ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                    <span className="text-sm">Neutered/Spayed</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {pet.houseTrained ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                    <span className="text-sm">House Trained</span>
-                  </div>
-                </div>
-                {pet.medicalHistory && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Medical History</h4>
-                    <p className="text-sm text-foreground">{pet.medicalHistory}</p>
-                  </div>
-                )}
-                {pet.specialNeeds && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Special Needs</h4>
-                    <p className="text-sm text-foreground">{pet.specialNeeds}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <h3 className="text-xl font-semibold text-foreground">Behavioral Traits</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {pet.goodWithKids !== null && (
-                    <div className="flex items-center space-x-2">
-                      {pet.goodWithKids ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                      <span className="text-sm">Good with Kids</span>
-                    </div>
-                  )}
-                  {pet.goodWithDogs !== null && (
-                    <div className="flex items-center space-x-2">
-                      {pet.goodWithDogs ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                      <span className="text-sm">Good with Dogs</span>
-                    </div>
-                  )}
-                  {pet.goodWithCats !== null && (
-                    <div className="flex items-center space-x-2">
-                      {pet.goodWithCats ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                      <span className="text-sm">Good with Cats</span>
-                    </div>
-                  )}
-                  {pet.goodWithPets !== null && (
-                    <div className="flex items-center space-x-2">
-                      {pet.goodWithPets ? <CheckCircle className="h-5 w-5 text-green-600" /> : <XCircle className="h-5 w-5 text-red-600" />}
-                      <span className="text-sm">Good with Other Pets</span>
-                    </div>
-                  )}
-                </div>
-                {pet.energyLevel && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Energy Level</h4>
-                    <Badge variant="secondary" className="capitalize">{pet.energyLevel}</Badge>
-                  </div>
-                )}
-                {pet.trainedLevel && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-2">Training Level</h4>
-                    <Badge variant="secondary" className="capitalize">{pet.trainedLevel.replace('_', ' ')}</Badge>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <div>
-                  <div className="flex items-start justify-between mb-2">
-                    <h1 className="text-3xl font-bold text-foreground">{pet.name}</h1>
-                    {pet.isUrgent && (
-                      <Badge variant="destructive" className="flex items-center space-x-1">
-                        <AlertCircle size={14} /><span>Urgent</span>
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-lg text-muted-foreground">
-                    {pet.breed || (pet.species ? pet.species.charAt(0).toUpperCase() + pet.species.slice(1) : 'Pet')}
+          {/* Info – 2/5 */}
+          <div className="lg:col-span-2 space-y-4">
+
+            {/* Name + status */}
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <h1 className="text-2xl font-bold leading-tight">{pet.name}</h1>
+                {pet.isUrgent && (
+                  <Badge variant="destructive" className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                    <AlertCircle size={11} /> Urgent
+                  </Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground text-sm mt-0.5">
+                {pet.breed || (pet.species ? pet.species.charAt(0).toUpperCase() + pet.species.slice(1) : 'Pet')}
+              </p>
+              <Badge
+                variant={pet.adoptionStatus === 'available' ? 'default' : 'secondary'}
+                className="mt-2 capitalize"
+              >
+                {pet.adoptionStatus || 'Unknown'}
+              </Badge>
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-muted/50 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Age</p>
+                <p className="font-semibold text-sm mt-0.5">{getAgeDisplay()}</p>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Gender</p>
+                <p className="font-semibold text-sm mt-0.5 capitalize">{pet.gender || '—'}</p>
+              </div>
+              {pet.size && (
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Size</p>
+                  <p className="font-semibold text-sm mt-0.5 capitalize">{pet.size.replace('_', ' ')}</p>
+                </div>
+              )}
+              {pet.weight && (
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Weight</p>
+                  <p className="font-semibold text-sm mt-0.5">{pet.weight} kg</p>
+                </div>
+              )}
+              {(pet.city || pet.state) && (
+                <div className={`bg-muted/50 rounded-xl p-3 ${!pet.size && !pet.weight ? '' : 'col-span-2'}`}>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Location</p>
+                  <p className="font-semibold text-sm mt-0.5">
+                    {[pet.city, pet.state].filter(Boolean).join(', ')}
                   </p>
                 </div>
+              )}
+            </div>
 
-                <div>
-                  <Badge
-                    variant={pet.adoptionStatus === 'available' ? 'success' : pet.adoptionStatus === 'pending' ? 'secondary' : 'default'}
-                    className="text-sm"
-                  >
-                    {pet.adoptionStatus ? pet.adoptionStatus.charAt(0).toUpperCase() + pet.adoptionStatus.slice(1) : 'Unknown'}
-                  </Badge>
-                </div>
+            {/* Action buttons */}
+            <div className="space-y-2">
+              {isOwner ? (
+                <Button className="w-full" disabled>Your Listing</Button>
+              ) : pet.adoptionStatus !== 'available' ? (
+                <Button className="w-full" disabled>Not Available</Button>
+              ) : user?.role === 'adopter' ? (
+                <>
+                  <Button className="w-full" onClick={handleOpenRequestDialog}>
+                    Send Adoption Request
+                  </Button>
+                  <Button className="w-full" variant="outline" onClick={handleOpenVisitDialog}>
+                    <CalendarCheck className="mr-2 h-4 w-4" />
+                    Request a Visit
+                  </Button>
+                </>
+              ) : (
+                <Button className="w-full" onClick={() => { toast.info('Sign in as an adopter to adopt this pet'); router.push('/login'); }}>
+                  Sign in to Adopt
+                </Button>
+              )}
 
-                <div className="space-y-3">
-                  <div className="flex items-center text-foreground">
-                    <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span>{getAgeDisplay()}</span>
-                  </div>
-                  <div className="flex items-center text-foreground">
-                    <Ruler className="h-5 w-5 mr-3 text-muted-foreground" />
-                    <span className="capitalize">{pet.gender || 'Unknown'}</span>
-                    {pet.size && <span className="ml-2">• {pet.size.replace('_', ' ')}</span>}
-                  </div>
-                  {pet.weight && (
-                    <div className="flex items-center text-foreground">
-                      <Weight className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span>{pet.weight} kg</span>
-                    </div>
-                  )}
-                  {(pet.city || pet.state) && (
-                    <div className="flex items-center text-foreground">
-                      <MapPin className="h-5 w-5 mr-3 text-muted-foreground" />
-                      <span>{pet.city}{pet.city && pet.state ? ', ' : ''}{pet.state}</span>
-                    </div>
-                  )}
-                </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" onClick={handleFavoriteToggle}>
+                  <Heart size={14} className={`mr-1.5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+                  {isFavorite ? 'Saved' : 'Save'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Share2 size={14} className="mr-1.5" />
+                  Share
+                </Button>
+              </div>
+            </div>
 
-                {/* Action Buttons */}
-                <div className="space-y-2 pt-4">
-                  {isOwner ? (
-                    <Button className="w-full" size="lg" disabled>Your Listing</Button>
-                  ) : pet.adoptionStatus !== 'available' ? (
-                    <Button className="w-full" size="lg" disabled>Not Available</Button>
-                  ) : user?.role === 'adopter' ? (
-                    <>
-                      <Button className="w-full" size="lg" onClick={handleOpenRequestDialog}>
-                        Send Adoption Request
-                      </Button>
-                      <Button className="w-full" size="lg" variant="outline" onClick={handleOpenVisitDialog}>
-                        <CalendarCheck className="mr-2 h-4 w-4" />
-                        Request a Visit
-                      </Button>
-                    </>
-                  ) : (
-                    <Button className="w-full" size="lg" onClick={() => { toast.info('Sign in as an adopter to adopt this pet'); router.push('/login'); }}>
-                      Sign in to Adopt
-                    </Button>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={handleFavoriteToggle}>
-                      <Heart size={18} className={`mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                      {isFavorite ? 'Saved' : 'Save'}
-                    </Button>
-                    <Button variant="outline" onClick={handleShare}>
-                      <Share2 size={18} className="mr-2" />
-                      Share
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
+            {/* Owner row */}
             {pet.owner && (
-              <Card>
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {pet.owner.role === 'shelter' ? 'Shelter Information' : 'Owner Information'}
-                  </h3>
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-12 w-12">
+              <div className="border border-border rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage src={pet.owner.profileImage} alt={pet.owner.name} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {pet.owner.name?.charAt(0).toUpperCase() || 'O'}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-medium text-foreground">{pet.owner.name || 'Unknown'}</div>
-                      <div className="text-sm text-muted-foreground capitalize">{pet.owner.role || 'Owner'}</div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{pet.owner.name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{pet.owner.role || 'Owner'}</p>
                     </div>
                   </div>
-                  {(pet.owner.city || pet.owner.state) && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin size={16} className="mr-2" />
-                      {pet.owner.city}{pet.owner.city && pet.owner.state ? ', ' : ''}{pet.owner.state}
-                    </div>
-                  )}
-                  <div className="space-y-2 pt-2">
+                  <div className="flex gap-1.5 flex-shrink-0">
                     {!isOwner && canMessage && (
-                      <Button variant="outline" className="w-full" size="sm" onClick={() => router.push(`/messages/${pet.owner.id}`)}>
-                        <Mail size={16} className="mr-2" />Send Message
-                      </Button>
-                    )}
-                    {!isOwner && !canMessage && user?.role === 'adopter' && (
-                      <Button variant="outline" className="w-full" size="sm" disabled title="Available after your adoption request is approved">
-                        <Mail size={16} className="mr-2" />Message (approval required)
+                      <Button variant="outline" size="sm" className="h-8 px-3" onClick={() => router.push(`/messages/${pet.owner.id}`)}>
+                        <Mail size={13} className="mr-1" /> Message
                       </Button>
                     )}
                     {pet.owner.role === 'shelter' && !isOwner && (
-                      <Button variant="outline" className="w-full" size="sm" onClick={() => router.push(`/shelters/${pet.owner.id}`)}>
-                        View Shelter Profile
+                      <Button variant="outline" size="sm" className="h-8 px-3 text-xs" onClick={() => router.push(`/shelters/${pet.owner.id}`)}>
+                        View Shelter
                       </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {pet.isUrgent && pet.urgentReason && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-red-900 mb-1">Urgent Adoption</h4>
-                      <p className="text-sm text-red-800">{pet.urgentReason}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+                {!isOwner && !canMessage && user?.role === 'adopter' && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                    <Lock size={10} />
+                    Messaging unlocks after your adoption request is approved
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
+
+        {/* ── Details below ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* About */}
+          {(pet.description || pet.story) && (
+            <Card className="md:col-span-2">
+              <CardContent className="p-4 space-y-2">
+                <h2 className="font-semibold">About {pet.name}</h2>
+                {pet.description && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{pet.description}</p>
+                )}
+                {pet.story && (
+                  <>
+                    <h3 className="font-medium text-sm pt-1">Story</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{pet.story}</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Health */}
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <h2 className="font-semibold">Health</h2>
+              <div className="space-y-2">
+                <HealthRow label="Vaccinated" value={pet.isVaccinated} />
+                <HealthRow label="Neutered / Spayed" value={pet.isNeutered || pet.isSpayed} />
+                <HealthRow label="House Trained" value={pet.houseTrained} />
+              </div>
+              {pet.medicalHistory && (
+                <div className="pt-1 border-t border-border">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Medical History</p>
+                  <p className="text-sm text-foreground">{pet.medicalHistory}</p>
+                </div>
+              )}
+              {pet.specialNeeds && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Special Needs</p>
+                  <p className="text-sm text-foreground">{pet.specialNeeds}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Behavior */}
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <h2 className="font-semibold">Behavior</h2>
+              <div className="space-y-2">
+                {pet.goodWithKids  !== null && <HealthRow label="Good with Kids"       value={pet.goodWithKids}  />}
+                {pet.goodWithDogs  !== null && <HealthRow label="Good with Dogs"       value={pet.goodWithDogs}  />}
+                {pet.goodWithCats  !== null && <HealthRow label="Good with Cats"       value={pet.goodWithCats}  />}
+                {pet.goodWithPets  !== null && <HealthRow label="Good with Other Pets" value={pet.goodWithPets}  />}
+              </div>
+              {(pet.energyLevel || pet.trainedLevel) && (
+                <div className="flex gap-4 pt-1 border-t border-border">
+                  {pet.energyLevel && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Energy</p>
+                      <Badge variant="secondary" className="capitalize">{pet.energyLevel}</Badge>
+                    </div>
+                  )}
+                  {pet.trainedLevel && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Training</p>
+                      <Badge variant="secondary" className="capitalize">{pet.trainedLevel.replace('_', ' ')}</Badge>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Urgent notice */}
+          {pet.isUrgent && pet.urgentReason && (
+            <Card className="md:col-span-2 border-destructive/30 bg-destructive/5">
+              <CardContent className="p-4 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm text-destructive mb-1">Urgent Adoption</h4>
+                  <p className="text-sm text-muted-foreground">{pet.urgentReason}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
-      <div className="mt-12">
+      {/* Reviews */}
+      <div className="mt-6">
         <PetReviewsSection petId={pet.id} canReview={user?.role === 'adopter' && !isOwner} />
       </div>
 
@@ -568,27 +540,25 @@ export default function PetDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Textarea
-                value={requestMessage}
-                onChange={(e) => setRequestMessage(e.target.value)}
-                placeholder="Explain why you would be a good fit for this pet, your experience with pets, your living situation, etc..."
-                rows={6}
-                maxLength={1000}
-                className={requestMessage.length > 0 && requestMessage.length < 20 ? 'border-red-500' : ''}
-              />
-              <p className={`text-xs ${requestMessage.length < 20 && requestMessage.length > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                {requestMessage.length}/1000 characters
-                {requestMessage.length < 20 && requestMessage.length > 0 && ' (minimum 20 required)'}
-              </p>
-            </div>
+            <Textarea
+              value={requestMessage}
+              onChange={(e) => setRequestMessage(e.target.value)}
+              placeholder="Explain why you'd be a good fit — your experience with pets, living situation, etc."
+              rows={6}
+              maxLength={1000}
+              className={requestMessage.length > 0 && requestMessage.length < 20 ? 'border-destructive' : ''}
+            />
+            <p className={`text-xs ${requestMessage.length < 20 && requestMessage.length > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+              {requestMessage.length}/1000 characters
+              {requestMessage.length < 20 && requestMessage.length > 0 && ' (minimum 20 required)'}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowRequestDialog(false); setRequestMessage(''); }} disabled={isRequesting}>
               Cancel
             </Button>
             <Button onClick={handleAdoptionRequest} disabled={isRequesting || requestMessage.length < 20}>
-              {isRequesting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</> : 'Send Request'}
+              {isRequesting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending…</> : 'Send Request'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -608,7 +578,7 @@ export default function PetDetailPage() {
           </DialogHeader>
 
           <div className="space-y-5 py-2">
-            {/* Step 1 — pick a time slot */}
+            {/* Step 1 — time slot */}
             <div>
               <p className="text-sm font-semibold mb-2">1. Choose a time slot</p>
               {slotsLoading ? (
@@ -648,7 +618,7 @@ export default function PetDetailPage() {
               )}
             </div>
 
-            {/* Step 2 — pick a date */}
+            {/* Step 2 — date */}
             {selectedSlot && (
               <div>
                 <p className="text-sm font-semibold mb-2">
@@ -658,7 +628,7 @@ export default function PetDetailPage() {
                   {upcomingDates.map((date) => (
                     <button
                       key={date.toISOString()}
-                      onClick={() => handleSelectDate(date)}
+                      onClick={() => setSelectedDate(date)}
                       className={`rounded-lg border-2 px-3 py-2 text-sm transition-all ${
                         selectedDate?.toDateString() === date.toDateString()
                           ? 'border-primary bg-primary text-primary-foreground font-semibold'
@@ -672,15 +642,13 @@ export default function PetDetailPage() {
               </div>
             )}
 
-            {/* Confirmation summary */}
+            {/* Summary */}
             {selectedSlot && selectedDate && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm space-y-1">
                 <p className="font-semibold text-primary flex items-center gap-1.5">
                   <CheckCircle className="h-4 w-4" /> Visit details
                 </p>
-                <p className="text-foreground">
-                  <span className="font-medium">{format(selectedDate, 'EEEE, MMMM d yyyy')}</span>
-                </p>
+                <p className="font-medium">{format(selectedDate, 'EEEE, MMMM d yyyy')}</p>
                 <p className="text-muted-foreground">{selectedSlot.startTime} – {selectedSlot.endTime}</p>
               </div>
             )}
@@ -691,7 +659,7 @@ export default function PetDetailPage() {
               <Textarea
                 value={visitNotes}
                 onChange={(e) => setVisitNotes(e.target.value)}
-                placeholder="Any questions for the shelter, accessibility needs, who will be attending, etc."
+                placeholder="Any questions, accessibility needs, or who will be attending…"
                 rows={3}
                 maxLength={500}
               />
@@ -702,10 +670,7 @@ export default function PetDetailPage() {
             <Button variant="outline" onClick={() => setShowVisitDialog(false)} disabled={isBooking}>
               Cancel
             </Button>
-            <Button
-              onClick={handleBookVisit}
-              disabled={isBooking || !selectedSlot || !selectedDate}
-            >
+            <Button onClick={handleBookVisit} disabled={isBooking || !selectedSlot || !selectedDate}>
               {isBooking
                 ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Booking…</>
                 : <><CalendarCheck className="mr-2 h-4 w-4" />Request Visit</>

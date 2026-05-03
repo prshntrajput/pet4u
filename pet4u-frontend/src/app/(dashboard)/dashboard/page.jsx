@@ -4,10 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  PawPrint, Heart, FileText, TrendingUp, MessageSquare,
-  ArrowRight, Sparkles, Plus, Calendar, Inbox,
-} from 'lucide-react';
+import { PawPrint, ArrowRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { petAPI } from '@/lib/api/pets';
 import PetCard from '../../_component/pets/PetCard';
@@ -41,28 +38,8 @@ export default function DashboardPage() {
 
   if (user?.role === 'admin') { router.push('/admin'); return null; }
 
-  const shelterActions = [
-    { href: '/pets/create',       icon: Plus,          label: 'Add Pet',      primary: true },
-    { href: '/my-pets',           icon: PawPrint,      label: 'My Pets'      },
-    { href: '/adoption-requests', icon: Inbox,         label: 'Requests'     },
-    { href: '/appointments',      icon: Calendar,      label: 'Appointments' },
-    { href: '/analytics',         icon: TrendingUp,    label: 'Analytics'    },
-    { href: '/messages',          icon: MessageSquare, label: 'Messages'     },
-  ];
-
-  const adopterActions = [
-    { href: '/pets',         icon: PawPrint,      label: 'Browse',     primary: true },
-    { href: '/match',        icon: Sparkles,      label: 'Find Match' },
-    { href: '/favorites',    icon: Heart,         label: 'Favorites'  },
-    { href: '/my-requests',  icon: FileText,      label: 'Requests'   },
-    { href: '/appointments', icon: Calendar,      label: 'Visits'     },
-    { href: '/messages',     icon: MessageSquare, label: 'Messages'   },
-  ];
-
-  const quickActions = user?.role === 'shelter' ? shelterActions : adopterActions;
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* Welcome */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -82,27 +59,6 @@ export default function DashboardPage() {
             </Button>
           </Link>
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {quickActions.map((a, i) => {
-          const Icon = a.icon;
-          return (
-            <Link key={i} href={a.href}>
-              <div className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-all hover:shadow-sm cursor-pointer ${
-                a.primary
-                  ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/15'
-                  : 'bg-card border-border hover:border-primary/30 hover:bg-muted/50'
-              }`}>
-                <Icon className={`h-5 w-5 ${a.primary ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`text-[11px] font-medium leading-tight ${a.primary ? 'text-primary' : 'text-foreground/80'}`}>
-                  {a.label}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
       </div>
 
       {/* Featured / My Pets */}
