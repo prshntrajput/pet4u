@@ -75,7 +75,7 @@ export default function HomePage() {
       </section>
 
       {/* ─── Stats ─── */}
-      <section className="border-y border-border bg-muted/40">
+    {/**   <section className="border-y border-border bg-muted/40">
         <div className="container mx-auto px-4 py-10">
           <div className="grid grid-cols-3 max-w-xl mx-auto divide-x divide-border">
             {[
@@ -90,7 +90,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> **/}
 
       {/* ─── Featured Pets ─── */}
       <section className="py-20">
