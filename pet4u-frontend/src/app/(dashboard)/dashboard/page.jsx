@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import {
   PawPrint, ArrowRight, Plus, ClipboardList, Calendar,
   MessageSquare, Sparkles, Heart, Search, BarChart2,
-  ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { petAPI } from '@/lib/api/pets';
@@ -115,18 +114,14 @@ const SHELTER_ACTIONS = [
   },
 ];
 
-function QuickActionCard({ href, label, desc, Icon, iconColor, iconBg }) {
+function QuickActionCard({ href, label, Icon, iconColor, iconBg }) {
   return (
     <Link href={href} className="group">
-      <div className="bg-card border border-border rounded-2xl p-3.5 h-full hover:border-primary/40 hover:shadow-md transition-all duration-200">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${iconBg} transition-transform duration-200 group-hover:scale-105`}>
-          <Icon className={`h-5 w-5 ${iconColor}`} />
+      <div className="bg-card border border-border rounded-xl p-2.5 flex flex-col items-center gap-1.5 hover:border-primary/40 hover:bg-accent transition-all duration-150">
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg}`}>
+          <Icon className={`h-4 w-4 ${iconColor}`} />
         </div>
-        <p className="text-sm font-semibold text-foreground leading-tight">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed hidden sm:block">{desc}</p>
-        <div className="mt-2 flex items-center gap-0.5 text-xs text-muted-foreground/60 group-hover:text-primary transition-colors duration-200">
-          <ChevronRight className="h-3 w-3" />
-        </div>
+        <p className="text-[11px] font-medium text-foreground text-center leading-tight">{label}</p>
       </div>
     </Link>
   );
@@ -186,13 +181,13 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      {/* Quick Actions — mobile only */}
+      <div className="md:hidden bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center px-4 py-2.5 border-b border-border">
           <h2 className="font-semibold text-sm">Quick Actions</h2>
         </div>
-        <div className="p-4">
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+        <div className="p-3">
+          <div className="grid grid-cols-6 gap-2">
             {quickActions.map((action) => (
               <QuickActionCard key={action.href} {...action} />
             ))}
