@@ -15,38 +15,31 @@ const analyticsController = {
       const cacheKey = `analytics:shelter:${shelterId}:${dateRange}`;
 
       if (redis) {
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          return res.status(200).json({
-            success: true,
-            data: JSON.parse(cached),
-            requestId,
-            cached: true,
-          });
+        try {
+          const cached = await redis.get(cacheKey);
+          if (cached) {
+            return res.status(200).json({ success: true, data: JSON.parse(cached), requestId, cached: true });
+          }
+        } catch (cacheErr) {
+          logger.warn('Analytics cache read failed, proceeding without cache', { err: cacheErr.message });
         }
       }
 
       const analytics = await analyticsService.getShelterAnalytics(shelterId, parseInt(dateRange));
 
       if (redis) {
-        await redis.setex(cacheKey, 600, JSON.stringify(analytics));
+        try {
+          await redis.setEx(cacheKey, 600, JSON.stringify(analytics));
+        } catch (cacheErr) {
+          logger.warn('Analytics cache write failed', { err: cacheErr.message });
+        }
       }
 
-      res.status(200).json({
-        success: true,
-        message: 'Analytics fetched successfully',
-        data: analytics,
-        requestId,
-        cached: false,
-      });
+      res.status(200).json({ success: true, message: 'Analytics fetched successfully', data: analytics, requestId, cached: false });
 
     } catch (error) {
-      logger.error('Get shelter analytics error:', { error: error.message, stack: error.stack, shelterId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch analytics',
-        requestId
-      });
+      logger.error('Get shelter analytics error:', { err: error, shelterId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to fetch analytics', requestId });
     }
   },
 
@@ -61,38 +54,31 @@ const analyticsController = {
       const cacheKey = `analytics:pet:${petId}`;
 
       if (redis) {
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-          return res.status(200).json({
-            success: true,
-            data: JSON.parse(cached),
-            requestId,
-            cached: true,
-          });
+        try {
+          const cached = await redis.get(cacheKey);
+          if (cached) {
+            return res.status(200).json({ success: true, data: JSON.parse(cached), requestId, cached: true });
+          }
+        } catch (cacheErr) {
+          logger.warn('Pet metrics cache read failed, proceeding without cache', { err: cacheErr.message });
         }
       }
 
       const metrics = await analyticsService.getPetMetrics(petId);
 
       if (redis) {
-        await redis.setex(cacheKey, 300, JSON.stringify(metrics));
+        try {
+          await redis.setEx(cacheKey, 300, JSON.stringify(metrics));
+        } catch (cacheErr) {
+          logger.warn('Pet metrics cache write failed', { err: cacheErr.message });
+        }
       }
 
-      res.status(200).json({
-        success: true,
-        message: 'Pet metrics fetched successfully',
-        data: metrics,
-        requestId,
-        cached: false,
-      });
+      res.status(200).json({ success: true, message: 'Pet metrics fetched successfully', data: metrics, requestId, cached: false });
 
     } catch (error) {
-      logger.error('Get pet metrics error:', { error: error.message, stack: error.stack, petId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch pet metrics',
-        requestId
-      });
+      logger.error('Get pet metrics error:', { err: error, petId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to fetch pet metrics', requestId });
     }
   },
 };
