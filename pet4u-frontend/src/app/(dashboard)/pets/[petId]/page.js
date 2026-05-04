@@ -588,7 +588,7 @@ export default function PetDetailPage() {
               ) : availabilitySlots.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
                   <Calendar className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  This shelter hasn't set up visit times yet.<br />
+                  This shelter has not set up visit times yet.<br />
                   Try messaging them directly.
                 </div>
               ) : (
