@@ -1,6 +1,6 @@
 const { createId } = require('@paralleldrive/cuid2');
 const { db } = require('../config/database');
-const { adoptionRequests, pets, users, notifications } = require('../models');
+const { adoptionRequests, pets, users, notifications, appointments } = require('../models');
 const { logger } = require('../config/logger');
 const emailService = require('./emailServices');
 const { eq, and, desc, sql } = require('drizzle-orm');
@@ -203,6 +203,28 @@ const adoptionService = {
 
     if (status === 'approved') {
       await db.update(pets).set({ adoptionStatus: 'pending', updatedAt: new Date() }).where(eq(pets.id, request.petId));
+
+      if (meetingDate) {
+        const apptDate = new Date(meetingDate);
+        const hh = String(apptDate.getHours()).padStart(2, '0');
+        const mm = String(apptDate.getMinutes()).padStart(2, '0');
+        const startTime = `${hh}:${mm}`;
+        const endTime = `${String((apptDate.getHours() + 1) % 24).padStart(2, '0')}:${mm}`;
+
+        await db.insert(appointments).values({
+          id: createId(),
+          shelterId,
+          adopterId: request.adopterId,
+          petId: request.petId,
+          adoptionRequestId: requestIdParam,
+          scheduledDate: apptDate,
+          startTime,
+          endTime,
+          location: meetingLocation || null,
+          adopterNotes: meetingNotes || null,
+          status: 'confirmed',
+        });
+      }
     }
 
     const [notification] = await db.insert(notifications).values({
