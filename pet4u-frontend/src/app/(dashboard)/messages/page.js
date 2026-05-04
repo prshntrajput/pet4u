@@ -3,176 +3,127 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchConversations } from '../../../lib/store/slices/messagesSlice';
-import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MessageSquare, Search, Sparkles } from 'lucide-react';
+import { Loader2, MessageSquare, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function MessagesPage() {
   const dispatch = useDispatch();
-  const { conversations, isLoading, error } = useSelector((state) => state.messages);
+  const { conversations, isLoading } = useSelector((state) => state.messages);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     dispatch(fetchConversations());
   }, [dispatch]);
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filtered = conversations.filter((conv) =>
+    conv.otherUser?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const unreadCount = conversations.filter((c) => c.unreadCount > 0).length;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-20">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
-          <span className="text-3xl">⚠️</span>
-        </div>
-        <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
-        <p className="text-destructive">{error}</p>
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="inline-flex p-2 rounded-xl bg-primary/10 border-2 border-primary/20">
-              <MessageSquare className="h-6 w-6 text-primary" />
-            </div>
-            <h1 className="text-3xl font-bold">
-              Messages
-            </h1>
-          </div>
-          <p className="text-muted-foreground ml-14">
+          <h1 className="text-xl font-bold">Messages</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+            {unreadCount > 0 && <span className="text-primary font-medium"> · {unreadCount} unread</span>}
           </p>
         </div>
-
-        {/* Active Badge */}
-        {conversations.length > 0 && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border-2 border-primary/20">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">
-              {conversations.filter(c => c.unreadCount > 0).length} unread
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          type="text"
           placeholder="Search conversations..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-11 border-2"
+          className="pl-9 h-9 text-sm"
         />
       </div>
 
-      {/* Conversations List */}
-      {filteredConversations.length === 0 ? (
-        <div className="text-center py-20">
-          {/* Empty State Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 animate-ping">
-                <MessageSquare className="h-24 w-24 text-primary/20" />
-              </div>
-              <MessageSquare className="h-24 w-24 text-muted-foreground relative" />
-            </div>
-          </div>
-          
-          {/* Empty State Text */}
-          <h3 className="text-2xl font-bold mb-2">
+      {/* Conversation list */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16">
+          <MessageSquare className="h-10 w-10 text-muted-foreground/25 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold mb-1">
             {searchQuery ? 'No conversations found' : 'No messages yet'}
           </h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            {searchQuery 
+          <p className="text-xs text-muted-foreground">
+            {searchQuery
               ? 'Try a different search term'
-              : 'Start a conversation by contacting a shelter about a pet'
-            }
+              : 'Start a conversation by contacting a shelter about a pet'}
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredConversations.map((conversation) => (
-            <Link
-              key={conversation.id}
-              href={`/messages/${conversation.otherUser.id}`}
-            >
-              <Card className={`hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer border-2 ${
-                conversation.unreadCount > 0 ? 'bg-primary/5 border-primary/30' : ''
-              }`}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Avatar */}
-                    <Avatar className="h-12 w-12 border-2 border-border">
-                      <AvatarImage
-                        src={conversation.otherUser.profileImage}
-                        alt={conversation.otherUser.name}
-                      />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-base font-semibold">
-                        {conversation.otherUser.name.charAt(0).toUpperCase()}
+        <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
+          {filtered.map((conv) => {
+            const other = conv.otherUser;
+            const initials = other?.name?.charAt(0)?.toUpperCase() || '?';
+            return (
+              <Link key={conv.id} href={`/messages/${other?.id}`} className="block">
+                <div className={`flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors ${
+                  conv.unreadCount > 0 ? 'bg-primary/5' : ''
+                }`}>
+                  {/* Avatar with unread dot */}
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={other?.profileImage} alt={other?.name} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                        {initials}
                       </AvatarFallback>
                     </Avatar>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className={`font-semibold ${
-                            conversation.unreadCount > 0 ? 'text-foreground' : 'text-foreground'
-                          }`}>
-                            {conversation.otherUser.name}
-                          </h3>
-                          <Badge variant="secondary" className="text-xs capitalize">
-                            {conversation.otherUser.role}
-                          </Badge>
-                        </div>
-                        {conversation.lastMessageAt && (
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDistanceToNow(new Date(conversation.lastMessageAt), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-sm truncate ${
-                        conversation.unreadCount > 0 
-                          ? 'text-foreground font-medium' 
-                          : 'text-muted-foreground'
-                      }`}>
-                        {conversation.lastMessageContent || 'No messages yet'}
-                      </p>
-                    </div>
-
-                    {/* Unread Badge */}
-                    {conversation.unreadCount > 0 && (
-                      <Badge variant="destructive" className="ml-2 h-6 min-w-[24px] flex items-center justify-center">
-                        {conversation.unreadCount}
-                      </Badge>
+                    {conv.unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[9px] text-primary-foreground flex items-center justify-center font-bold">
+                        {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
+                      </span>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={`text-sm truncate ${conv.unreadCount > 0 ? 'font-semibold' : 'font-medium'}`}>
+                          {other?.name || 'Unknown User'}
+                        </span>
+                        {other?.role && (
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 capitalize flex-shrink-0">
+                            {other.role}
+                          </Badge>
+                        )}
+                      </div>
+                      {conv.lastMessageAt && (
+                        <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                          {formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: true })}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs truncate mt-0.5 ${
+                      conv.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'
+                    }`}>
+                      {conv.lastMessageContent || 'No messages yet'}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
