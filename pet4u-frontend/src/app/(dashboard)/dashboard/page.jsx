@@ -5,8 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
-  PawPrint, ArrowRight, Plus, ClipboardList, Calendar,
-  MessageSquare, Sparkles, Heart, Search, BarChart2,
+  PawPrint, ArrowRight, Plus, ClipboardList, Calendar, Heart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { petAPI } from '@/lib/api/pets';
@@ -16,7 +15,6 @@ const ADOPTER_ACTIONS = [
   {
     href: '/my-requests',
     label: 'My Requests',
-    desc: 'Track adoption applications',
     Icon: ClipboardList,
     iconColor: 'text-blue-600',
     iconBg: 'bg-blue-50 dark:bg-blue-950',
@@ -24,42 +22,16 @@ const ADOPTER_ACTIONS = [
   {
     href: '/appointments',
     label: 'Visits',
-    desc: 'Scheduled meet & greets',
     Icon: Calendar,
     iconColor: 'text-violet-600',
     iconBg: 'bg-violet-50 dark:bg-violet-950',
   },
   {
-    href: '/messages',
-    label: 'Messages',
-    desc: 'Chat with shelters',
-    Icon: MessageSquare,
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-50 dark:bg-emerald-950',
-  },
-  {
-    href: '/find-match',
-    label: 'Find Match',
-    desc: 'Pets picked for you',
-    Icon: Sparkles,
-    iconColor: 'text-amber-600',
-    iconBg: 'bg-amber-50 dark:bg-amber-950',
-  },
-  {
     href: '/favorites',
     label: 'Favorites',
-    desc: 'Pets you saved',
     Icon: Heart,
     iconColor: 'text-rose-600',
     iconBg: 'bg-rose-50 dark:bg-rose-950',
-  },
-  {
-    href: '/lost-found',
-    label: 'Lost & Found',
-    desc: 'Report or find lost pets',
-    Icon: Search,
-    iconColor: 'text-slate-600',
-    iconBg: 'bg-slate-100 dark:bg-slate-800',
   },
 ];
 
@@ -67,7 +39,6 @@ const SHELTER_ACTIONS = [
   {
     href: '/adoption-requests',
     label: 'Requests',
-    desc: 'Review adoption requests',
     Icon: ClipboardList,
     iconColor: 'text-blue-600',
     iconBg: 'bg-blue-50 dark:bg-blue-950',
@@ -75,7 +46,6 @@ const SHELTER_ACTIONS = [
   {
     href: '/pets/create',
     label: 'Add Pet',
-    desc: 'List a new pet',
     Icon: Plus,
     iconColor: 'text-emerald-600',
     iconBg: 'bg-emerald-50 dark:bg-emerald-950',
@@ -83,45 +53,20 @@ const SHELTER_ACTIONS = [
   {
     href: '/appointments',
     label: 'Appointments',
-    desc: 'Manage scheduled visits',
     Icon: Calendar,
     iconColor: 'text-violet-600',
     iconBg: 'bg-violet-50 dark:bg-violet-950',
-  },
-  {
-    href: '/analytics',
-    label: 'Analytics',
-    desc: 'Performance insights',
-    Icon: BarChart2,
-    iconColor: 'text-amber-600',
-    iconBg: 'bg-amber-50 dark:bg-amber-950',
-  },
-  {
-    href: '/messages',
-    label: 'Messages',
-    desc: 'Talk to adopters',
-    Icon: MessageSquare,
-    iconColor: 'text-rose-600',
-    iconBg: 'bg-rose-50 dark:bg-rose-950',
-  },
-  {
-    href: '/my-pets',
-    label: 'My Pets',
-    desc: 'Manage your listings',
-    Icon: PawPrint,
-    iconColor: 'text-slate-600',
-    iconBg: 'bg-slate-100 dark:bg-slate-800',
   },
 ];
 
 function QuickActionCard({ href, label, Icon, iconColor, iconBg }) {
   return (
     <Link href={href} className="group">
-      <div className="bg-card border border-border rounded-xl p-2.5 flex flex-col items-center gap-1.5 hover:border-primary/40 hover:bg-accent transition-all duration-150">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg}`}>
-          <Icon className={`h-4 w-4 ${iconColor}`} />
+      <div className="bg-card border border-border rounded-xl p-3 flex flex-col items-center gap-2 hover:border-primary/40 hover:bg-accent transition-all duration-150">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+          <Icon className={`h-5 w-5 ${iconColor}`} />
         </div>
-        <p className="text-[11px] font-medium text-foreground text-center leading-tight">{label}</p>
+        <p className="text-[11px] font-medium text-foreground text-center leading-tight w-full truncate px-0.5">{label}</p>
       </div>
     </Link>
   );
@@ -187,7 +132,7 @@ export default function DashboardPage() {
           <h2 className="font-semibold text-sm">Quick Actions</h2>
         </div>
         <div className="p-3">
-          <div className="grid grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {quickActions.map((action) => (
               <QuickActionCard key={action.href} {...action} />
             ))}
