@@ -4,10 +4,133 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { PawPrint, ArrowRight, Plus } from 'lucide-react';
+import {
+  PawPrint, ArrowRight, Plus, ClipboardList, Calendar,
+  MessageSquare, Sparkles, Heart, Search, BarChart2,
+  ChevronRight,
+} from 'lucide-react';
 import Link from 'next/link';
 import { petAPI } from '@/lib/api/pets';
 import PetCard from '../../_component/pets/PetCard';
+
+const ADOPTER_ACTIONS = [
+  {
+    href: '/my-requests',
+    label: 'My Requests',
+    desc: 'Track adoption applications',
+    Icon: ClipboardList,
+    iconColor: 'text-blue-600',
+    iconBg: 'bg-blue-50 dark:bg-blue-950',
+  },
+  {
+    href: '/appointments',
+    label: 'Visits',
+    desc: 'Scheduled meet & greets',
+    Icon: Calendar,
+    iconColor: 'text-violet-600',
+    iconBg: 'bg-violet-50 dark:bg-violet-950',
+  },
+  {
+    href: '/messages',
+    label: 'Messages',
+    desc: 'Chat with shelters',
+    Icon: MessageSquare,
+    iconColor: 'text-emerald-600',
+    iconBg: 'bg-emerald-50 dark:bg-emerald-950',
+  },
+  {
+    href: '/find-match',
+    label: 'Find Match',
+    desc: 'Pets picked for you',
+    Icon: Sparkles,
+    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-50 dark:bg-amber-950',
+  },
+  {
+    href: '/favorites',
+    label: 'Favorites',
+    desc: 'Pets you saved',
+    Icon: Heart,
+    iconColor: 'text-rose-600',
+    iconBg: 'bg-rose-50 dark:bg-rose-950',
+  },
+  {
+    href: '/lost-found',
+    label: 'Lost & Found',
+    desc: 'Report or find lost pets',
+    Icon: Search,
+    iconColor: 'text-slate-600',
+    iconBg: 'bg-slate-100 dark:bg-slate-800',
+  },
+];
+
+const SHELTER_ACTIONS = [
+  {
+    href: '/adoption-requests',
+    label: 'Requests',
+    desc: 'Review adoption requests',
+    Icon: ClipboardList,
+    iconColor: 'text-blue-600',
+    iconBg: 'bg-blue-50 dark:bg-blue-950',
+  },
+  {
+    href: '/pets/create',
+    label: 'Add Pet',
+    desc: 'List a new pet',
+    Icon: Plus,
+    iconColor: 'text-emerald-600',
+    iconBg: 'bg-emerald-50 dark:bg-emerald-950',
+  },
+  {
+    href: '/appointments',
+    label: 'Appointments',
+    desc: 'Manage scheduled visits',
+    Icon: Calendar,
+    iconColor: 'text-violet-600',
+    iconBg: 'bg-violet-50 dark:bg-violet-950',
+  },
+  {
+    href: '/analytics',
+    label: 'Analytics',
+    desc: 'Performance insights',
+    Icon: BarChart2,
+    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-50 dark:bg-amber-950',
+  },
+  {
+    href: '/messages',
+    label: 'Messages',
+    desc: 'Talk to adopters',
+    Icon: MessageSquare,
+    iconColor: 'text-rose-600',
+    iconBg: 'bg-rose-50 dark:bg-rose-950',
+  },
+  {
+    href: '/my-pets',
+    label: 'My Pets',
+    desc: 'Manage your listings',
+    Icon: PawPrint,
+    iconColor: 'text-slate-600',
+    iconBg: 'bg-slate-100 dark:bg-slate-800',
+  },
+];
+
+function QuickActionCard({ href, label, desc, Icon, iconColor, iconBg }) {
+  return (
+    <Link href={href} className="group">
+      <div className="bg-card border border-border rounded-2xl p-3.5 h-full hover:border-primary/40 hover:shadow-md transition-all duration-200">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${iconBg} transition-transform duration-200 group-hover:scale-105`}>
+          <Icon className={`h-5 w-5 ${iconColor}`} />
+        </div>
+        <p className="text-sm font-semibold text-foreground leading-tight">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed hidden sm:block">{desc}</p>
+        <div className="mt-2 flex items-center gap-0.5 text-xs text-muted-foreground/60 group-hover:text-primary transition-colors duration-200">
+          <ChevronRight className="h-3 w-3" />
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useAuth({ requireAuth: true });
@@ -38,6 +161,8 @@ export default function DashboardPage() {
 
   if (user?.role === 'admin') { router.push('/admin'); return null; }
 
+  const quickActions = user?.role === 'shelter' ? SHELTER_ACTIONS : ADOPTER_ACTIONS;
+
   return (
     <div className="space-y-5">
 
@@ -59,6 +184,20 @@ export default function DashboardPage() {
             </Button>
           </Link>
         )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h2 className="font-semibold text-sm">Quick Actions</h2>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {quickActions.map((action) => (
+              <QuickActionCard key={action.href} {...action} />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Featured / My Pets */}
