@@ -1,1011 +1,168 @@
-const { createId } = require('@paralleldrive/cuid2');
-const slugify = require('slugify');
-const { db } = require('../config/database');
-const { pets, petImages, users } = require('../models');
+const petService = require('../services/petService');
 const { logger } = require('../config/logger');
-const { eq, and, or, sql, like, gte, lte, desc, asc } = require('drizzle-orm');
-const { cloudinaryUtils } = require('../config/cloudinary');
 
 const petController = {
-  // Create new pet listing
   createPet: async (req, res) => {
     const requestId = req.requestId;
     const userId = req.user.userId;
-
     try {
-      const petData = req.body;
-
-      // Get user's location if pet location not provided
-      let petCity = petData.city;
-      let petState = petData.state;
-
-      if (!petCity || !petState) {
-        const userResult = await db
-          .select({ city: users.city, state: users.state })
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-
-        if (userResult.length > 0) {
-          petCity = petCity || userResult[0].city;
-          petState = petState || userResult[0].state;
-        }
-      }
-
-      // Generate slug
-      const baseSlug = slugify(petData.name, { lower: true, strict: true });
-      const uniqueSlug = `${baseSlug}-${createId().slice(-6)}`;
-
-      // Create pet
-      const petId = createId();
-      const newPet = await db
-        .insert(pets)
-        .values({
-          id: petId,
-          ownerId: userId,
-          name: petData.name.trim(),
-          species: petData.species,
-          breed: petData.breed || null,
-          mixedBreed: petData.mixedBreed || false,
-          age: petData.age || null,
-          ageUnit: petData.ageUnit || 'months',
-          ageEstimated: petData.ageEstimated || false,
-          gender: petData.gender,
-          size: petData.size || null,
-          weight: petData.weight ? String(petData.weight) : null,
-          color: petData.color || null,
-          markings: petData.markings || null,
-          isVaccinated: petData.isVaccinated || false,
-          isNeutered: petData.isNeutered || false,
-          isSpayed: petData.isSpayed || false,
-          healthStatus: petData.healthStatus || 'healthy',
-          medicalHistory: petData.medicalHistory || null,
-          specialNeeds: petData.specialNeeds || null,
-          goodWithKids: petData.goodWithKids,
-          goodWithPets: petData.goodWithPets,
-          goodWithCats: petData.goodWithCats,
-          goodWithDogs: petData.goodWithDogs,
-          energyLevel: petData.energyLevel || null,
-          trainedLevel: petData.trainedLevel || null,
-          houseTrained: petData.houseTrained || false,
-          adoptionStatus: 'available',
-          adoptionFee: petData.adoptionFee ? String(petData.adoptionFee) : '0',
-          isUrgent: petData.isUrgent || false,
-          urgentReason: petData.urgentReason || null,
-          city: petCity,
-          state: petState,
-          country: 'India',
-          description: petData.description,
-          story: petData.story || null,
-          slug: uniqueSlug,
-          isActive: true,
-          isFeatured: false,
-          moderationStatus: 'approved',
-          viewCount: 0,
-          favoriteCount: 0,
-          inquiryCount: 0,
-          publishedAt: new Date(),
-        })
-        .returning();
-
-      logger.info('Pet created successfully', {
-        userId,
-        petId,
-        petName: petData.name,
-        requestId
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'Pet listing created successfully',
-        data: {
-          pet: newPet[0]
-        },
-        requestId
-      });
-
+      const pet = await petService.createPet(userId, req.body);
+      logger.info('Pet created successfully', { userId, petId: pet.id, petName: pet.name, requestId });
+      res.status(201).json({ success: true, message: 'Pet listing created successfully', data: { pet }, requestId });
     } catch (error) {
-      logger.error('Create pet error:', { error: error.message, userId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create pet listing',
-        requestId
-      });
+      logger.error('Create pet error', { err: error, userId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to create pet listing', requestId });
     }
   },
 
-  // Get all pets with filters
   getAllPets: async (req, res) => {
     const requestId = req.requestId;
-
     try {
-      const {
-        page = 1,
-        limit = 12,
-        search,
-        species,
-        gender,
-        size,
-        city,
-        state,
-        minAge,
-        maxAge,
-        ageUnit = 'months',
-        goodWithKids,
-        goodWithPets,
-        isVaccinated,
-        isNeutered,
-        energyLevel,
-        adoptionStatus = 'available',
-        ownerId,
-        sortBy = 'createdAt',
-        order = 'desc'
-      } = req.query;
-
-      const offset = (parseInt(page) - 1) * parseInt(limit);
-
-      // Build where conditions
-      let conditions = [
-        eq(pets.isActive, true),
-        eq(pets.moderationStatus, 'approved')
-      ];
-
-      if (adoptionStatus) {
-        conditions.push(eq(pets.adoptionStatus, adoptionStatus));
-      }
-
-      if (ownerId) {
-        conditions.push(eq(pets.ownerId, ownerId));
-      }
-
-      if (species) {
-        conditions.push(eq(pets.species, species));
-      }
-
-      if (gender) {
-        conditions.push(eq(pets.gender, gender));
-      }
-
-      if (size) {
-        conditions.push(eq(pets.size, size));
-      }
-
-      if (city) {
-        conditions.push(eq(pets.city, city));
-      }
-
-      if (state) {
-        conditions.push(eq(pets.state, state));
-      }
-
-      if (energyLevel) {
-        conditions.push(eq(pets.energyLevel, energyLevel));
-      }
-
-      if (goodWithKids === 'true') {
-        conditions.push(eq(pets.goodWithKids, true));
-      }
-
-      if (goodWithPets === 'true') {
-        conditions.push(eq(pets.goodWithPets, true));
-      }
-
-      if (isVaccinated === 'true') {
-        conditions.push(eq(pets.isVaccinated, true));
-      }
-
-      if (isNeutered === 'true') {
-        conditions.push(eq(pets.isNeutered, true));
-      }
-
-      // Age filtering
-      if (minAge) {
-        conditions.push(gte(pets.age, parseInt(minAge)));
-      }
-
-      if (maxAge) {
-        conditions.push(lte(pets.age, parseInt(maxAge)));
-      }
-
-      // Search functionality
-      if (search) {
-        conditions.push(
-          or(
-            like(pets.name, `%${search}%`),
-            like(pets.breed, `%${search}%`),
-            like(pets.description, `%${search}%`)
-          )
-        );
-      }
-
-      const whereClause = and(...conditions);
-
-      // Get pets with pagination
-      const petsResult = await db
-        .select({
-          id: pets.id,
-          name: pets.name,
-          species: pets.species,
-          breed: pets.breed,
-          age: pets.age,
-          ageUnit: pets.ageUnit,
-          gender: pets.gender,
-          size: pets.size,
-          city: pets.city,
-          state: pets.state,
-          primaryImage: pets.primaryImage,
-          adoptionStatus: pets.adoptionStatus,
-          adoptionFee: pets.adoptionFee,
-          isUrgent: pets.isUrgent,
-          description: pets.description,
-          slug: pets.slug,
-          viewCount: pets.viewCount,
-          favoriteCount: pets.favoriteCount,
-          createdAt: pets.createdAt,
-          ownerId: pets.ownerId,
-          ownerName: users.name,
-          ownerRole: users.role,
-        })
-        .from(pets)
-        .innerJoin(users, eq(pets.ownerId, users.id))
-        .where(whereClause)
-        .limit(parseInt(limit))
-        .offset(offset)
-        .orderBy(
-          order === 'desc' 
-            ? desc(pets[sortBy])
-            : asc(pets[sortBy])
-        );
-
-      // Get total count
-      const countResult = await db
-        .select({ count: sql`count(*)` })
-        .from(pets)
-        .innerJoin(users, eq(pets.ownerId, users.id))
-        .where(whereClause);
-
-      const totalCount = parseInt(countResult[0].count);
-      const totalPages = Math.ceil(totalCount / parseInt(limit));
-
-      logger.info('Pets fetched successfully', {
-        count: petsResult.length,
-        totalCount,
-        requestId
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Pets fetched successfully',
-        data: {
-          pets: petsResult,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages,
-            totalCount,
-            limit: parseInt(limit),
-            hasNext: parseInt(page) < totalPages,
-            hasPrev: parseInt(page) > 1
-          }
-        },
-        requestId
-      });
-
+      const result = await petService.getPets(req.query);
+      logger.info('Pets fetched successfully', { count: result.pets.length, total: result.pagination.totalCount, requestId });
+      res.status(200).json({ success: true, message: 'Pets fetched successfully', data: result, requestId });
     } catch (error) {
-      logger.error('Get all pets error:', { error: error.message, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch pets',
-        requestId
-      });
+      logger.error('Get all pets error', { err: error, requestId });
+      res.status(500).json({ success: false, message: 'Failed to fetch pets', requestId });
     }
   },
 
-  // Get single pet by ID or slug
   getPetById: async (req, res) => {
     const requestId = req.requestId;
     const { petId } = req.params;
-    const userId = req.user?.userId; // Optional auth
-
+    const userId = req.user?.userId;
     try {
-      // Try to find by ID first, then by slug
-      let petResult = await db
-        .select()
-        .from(pets)
-        .where(eq(pets.id, petId))
-        .limit(1);
-
-      if (petResult.length === 0) {
-        petResult = await db
-          .select()
-          .from(pets)
-          .where(eq(pets.slug, petId))
-          .limit(1);
+      const pet = await petService.getPetByIdOrSlug(petId, userId);
+      if (!pet) {
+        return res.status(404).json({ success: false, message: 'Pet not found', requestId });
       }
-
-      if (petResult.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Pet not found',
-          requestId
-        });
-      }
-
-      const pet = petResult[0];
-
-      // Get owner information
-      const ownerResult = await db
-        .select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          role: users.role,
-          profileImage: users.profileImage,
-          city: users.city,
-          state: users.state,
-        })
-        .from(users)
-        .where(eq(users.id, pet.ownerId))
-        .limit(1);
-
-      // Get pet images
-      const images = await db
-        .select()
-        .from(petImages)
-        .where(eq(petImages.petId, pet.id))
-        .orderBy(asc(petImages.sortOrder));
-
-      // Increment view count (only if not owner)
-      if (!userId || userId !== pet.ownerId) {
-        await db
-          .update(pets)
-          .set({ 
-            viewCount: sql`${pets.viewCount} + 1`,
-            updatedAt: new Date()
-          })
-          .where(eq(pets.id, pet.id));
-      }
-
       logger.info('Pet fetched successfully', { petId: pet.id, requestId });
-
-      res.status(200).json({
-        success: true,
-        message: 'Pet fetched successfully',
-        data: {
-          pet: {
-            ...pet,
-            owner: ownerResult[0],
-            images: images
-          }
-        },
-        requestId
-      });
-
+      res.status(200).json({ success: true, message: 'Pet fetched successfully', data: { pet }, requestId });
     } catch (error) {
-      logger.error('Get pet by ID error:', { error: error.message, petId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch pet',
-        requestId
-      });
+      logger.error('Get pet by ID error', { err: error, petId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to fetch pet', requestId });
     }
   },
 
-  // Get user's own pets
   getMyPets: async (req, res) => {
     const requestId = req.requestId;
     const userId = req.user.userId;
-
     try {
-      const { page = 1, limit = 12, status } = req.query;
-      const offset = (parseInt(page) - 1) * parseInt(limit);
-
-      let conditions = [eq(pets.ownerId, userId)];
-
-      if (status) {
-        conditions.push(eq(pets.adoptionStatus, status));
-      }
-
-      const whereClause = and(...conditions);
-
-      const myPets = await db
-        .select()
-        .from(pets)
-        .where(whereClause)
-        .limit(parseInt(limit))
-        .offset(offset)
-        .orderBy(desc(pets.createdAt));
-
-      const countResult = await db
-        .select({ count: sql`count(*)` })
-        .from(pets)
-        .where(whereClause);
-
-      const totalCount = parseInt(countResult[0].count);
-      const totalPages = Math.ceil(totalCount / parseInt(limit));
-
-      res.status(200).json({
-        success: true,
-        message: 'My pets fetched successfully',
-        data: {
-          pets: myPets,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages,
-            totalCount,
-            limit: parseInt(limit),
-            hasNext: parseInt(page) < totalPages,
-            hasPrev: parseInt(page) > 1
-          }
-        },
-        requestId
-      });
-
+      const result = await petService.getMyPets(userId, req.query);
+      res.status(200).json({ success: true, message: 'My pets fetched successfully', data: result, requestId });
     } catch (error) {
-      logger.error('Get my pets error:', { error: error.message, userId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to fetch your pets',
-        requestId
-      });
+      logger.error('Get my pets error', { err: error, userId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to fetch your pets', requestId });
     }
   },
 
-  // Update pet
   updatePet: async (req, res) => {
     const requestId = req.requestId;
     const userId = req.user.userId;
     const { petId } = req.params;
-
     try {
-      // Check if pet exists and belongs to user
-      const existingPet = await db
-        .select()
-        .from(pets)
-        .where(and(
-          eq(pets.id, petId),
-          eq(pets.ownerId, userId)
-        ))
-        .limit(1);
-
-      if (existingPet.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Pet not found or you do not have permission to edit it',
-          requestId
-        });
+      const pet = await petService.updatePet(petId, userId, req.body);
+      if (!pet) {
+        return res.status(404).json({ success: false, message: 'Pet not found or you do not have permission to edit it', requestId });
       }
-
-      const updateData = {
-        ...req.body,
-        updatedAt: new Date()
-      };
-
-      // Convert numbers to strings for decimal fields
-      if (updateData.weight) updateData.weight = String(updateData.weight);
-      if (updateData.adoptionFee) updateData.adoptionFee = String(updateData.adoptionFee);
-
-      const updatedPet = await db
-        .update(pets)
-        .set(updateData)
-        .where(eq(pets.id, petId))
-        .returning();
-
       logger.info('Pet updated successfully', { petId, userId, requestId });
-
-      res.status(200).json({
-        success: true,
-        message: 'Pet updated successfully',
-        data: {
-          pet: updatedPet[0]
-        },
-        requestId
-      });
-
+      res.status(200).json({ success: true, message: 'Pet updated successfully', data: { pet }, requestId });
     } catch (error) {
-      logger.error('Update pet error:', { error: error.message, petId, userId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update pet',
-        requestId
-      });
+      logger.error('Update pet error', { err: error, petId, userId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to update pet', requestId });
     }
   },
 
-  // Delete pet
   deletePet: async (req, res) => {
     const requestId = req.requestId;
     const userId = req.user.userId;
     const { petId } = req.params;
-
     try {
-      // Check if pet exists and belongs to user
-      const existingPet = await db
-        .select()
-        .from(pets)
-        .where(and(
-          eq(pets.id, petId),
-          eq(pets.ownerId, userId)
-        ))
-        .limit(1);
-
-      if (existingPet.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Pet not found or you do not have permission to delete it',
-          requestId
-        });
+      const deleted = await petService.deletePet(petId, userId);
+      if (!deleted) {
+        return res.status(404).json({ success: false, message: 'Pet not found or you do not have permission to delete it', requestId });
       }
-
-      // Get all pet images to delete from Cloudinary
-      const images = await db
-        .select()
-        .from(petImages)
-        .where(eq(petImages.petId, petId));
-
-      // Delete images from Cloudinary
-      for (const image of images) {
-        try {
-          if (image.cloudinaryPublicId) {
-            await cloudinaryUtils.deleteImage(image.cloudinaryPublicId);
-          }
-        } catch (deleteError) {
-          logger.warn('Failed to delete image from Cloudinary:', deleteError.message);
-        }
-      }
-
-      // Delete pet (cascade will delete images from DB)
-      await db
-        .delete(pets)
-        .where(eq(pets.id, petId));
-
       logger.info('Pet deleted successfully', { petId, userId, requestId });
-
-      res.status(200).json({
-        success: true,
-        message: 'Pet deleted successfully',
-        requestId
-      });
-
+      res.status(200).json({ success: true, message: 'Pet deleted successfully', requestId });
     } catch (error) {
-      logger.error('Delete pet error:', { error: error.message, petId, userId, requestId });
-      res.status(500).json({
+      logger.error('Delete pet error', { err: error, petId, userId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to delete pet', requestId });
+    }
+  },
+
+  uploadPetImages: async (req, res) => {
+    const requestId = req.requestId;
+    const userId = req.user.userId;
+    const { petId } = req.params;
+    try {
+      logger.info('Upload pet images started', { petId, userId, filesCount: req.files?.length, requestId });
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, message: 'No image files provided', requestId });
+      }
+      if (!req.cloudinaryResults || req.cloudinaryResults.length === 0) {
+        return res.status(500).json({ success: false, message: 'Image upload to Cloudinary failed', requestId });
+      }
+
+      const images = await petService.uploadPetImages(petId, userId, req.cloudinaryResults);
+
+      if (!images) {
+        return res.status(404).json({ success: false, message: 'Pet not found or you do not have permission to upload images', requestId });
+      }
+
+      logger.info('Pet images uploaded successfully', { petId, userId, imageCount: images.length, requestId });
+      res.status(200).json({ success: true, message: `${images.length} image(s) uploaded successfully`, data: { images }, requestId });
+    } catch (error) {
+      logger.error('Upload pet images error', { err: error, petId, userId, requestId });
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
         success: false,
-        message: 'Failed to delete pet',
-        requestId
+        message: error.statusCode ? error.message : 'Failed to upload images',
+        requestId,
       });
     }
   },
 
-  // Upload pet images
- // ✅ FIXED: Upload pet images - Works with memory storage
-uploadPetImages: async (req, res) => {
-  const requestId = req.requestId;
-  const userId = req.user.userId;
-  const { petId } = req.params;
-
-  try {
-    logger.info('Upload pet images started', {
-      petId,
-      userId,
-      filesCount: req.files?.length,
-      hasCloudinaryResults: !!req.cloudinaryResults,
-      requestId
-    });
-
-    // Check if pet exists and belongs to user
-    const existingPet = await db
-      .select()
-      .from(pets)
-      .where(and(
-        eq(pets.id, petId),
-        eq(pets.ownerId, userId)
-      ))
-      .limit(1);
-
-    if (existingPet.length === 0) {
-      // Delete uploaded images from Cloudinary if pet not found
-      if (req.cloudinaryResults && req.cloudinaryResults.length > 0) {
-        const { cloudinaryUtils } = require('../config/cloudinary');
-        const publicIds = req.cloudinaryResults.map(r => r.public_id);
-        await cloudinaryUtils.deleteMultipleImages(publicIds).catch(err => 
-          logger.warn('Failed to cleanup images:', err)
-        );
-      }
-
-      return res.status(404).json({
-        success: false,
-        message: 'Pet not found or you do not have permission to upload images',
-        requestId
-      });
-    }
-
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No image files provided',
-        requestId
-      });
-    }
-
-    if (!req.cloudinaryResults || req.cloudinaryResults.length === 0) {
-      return res.status(500).json({
-        success: false,
-        message: 'Image upload to Cloudinary failed',
-        requestId
-      });
-    }
-
-    // Get current image count
-    const currentImages = await db
-      .select({ count: sql`count(*)` })
-      .from(petImages)
-      .where(eq(petImages.petId, petId));
-
-    const currentCount = parseInt(currentImages[0].count);
-
-    // Check max images limit (10)
-    if (currentCount + req.cloudinaryResults.length > 10) {
-      // Delete uploaded images from Cloudinary
-      const { cloudinaryUtils } = require('../config/cloudinary');
-      const publicIds = req.cloudinaryResults.map(r => r.public_id);
-      await cloudinaryUtils.deleteMultipleImages(publicIds).catch(err => 
-        logger.warn('Failed to cleanup images:', err)
-      );
-
-      return res.status(400).json({
-        success: false,
-        message: `Maximum 10 images allowed. You already have ${currentCount} images.`,
-        requestId
-      });
-    }
-
-    const newImages = [];
-
-    // Insert new images using Cloudinary results
-    for (let i = 0; i < req.cloudinaryResults.length; i++) {
-      const cloudinaryResult = req.cloudinaryResults[i];
-      
-      logger.info('Processing Cloudinary result', {
-        index: i,
-        secure_url: cloudinaryResult.secure_url,
-        public_id: cloudinaryResult.public_id,
-        width: cloudinaryResult.width,
-        height: cloudinaryResult.height,
-        format: cloudinaryResult.format
-      });
-
-      const imageId = createId();
-      
-      const newImage = await db
-        .insert(petImages)
-        .values({
-          id: imageId,
-          petId: petId,
-          imageUrl: cloudinaryResult.secure_url,
-          cloudinaryPublicId: cloudinaryResult.public_id,
-          thumbnailUrl: cloudinaryResult.eager?.[0]?.secure_url || null,
-          isPrimary: currentCount === 0 && i === 0, // First image is primary if no images exist
-          sortOrder: currentCount + i,
-          width: cloudinaryResult.width,
-          height: cloudinaryResult.height,
-          fileSize: cloudinaryResult.bytes,
-          caption: null,
-          altText: `${existingPet[0].name} - Image ${currentCount + i + 1}`,
-        })
-        .returning();
-
-      newImages.push(newImage[0]);
-
-      // Set first image as primary image for pet if no primary image exists
-      if (currentCount === 0 && i === 0) {
-        await db
-          .update(pets)
-          .set({ 
-            primaryImage: cloudinaryResult.secure_url,
-            updatedAt: new Date()
-          })
-          .where(eq(pets.id, petId));
-        
-        logger.info('Set primary image for pet', { 
-          petId, 
-          imageUrl: cloudinaryResult.secure_url 
-        });
-      }
-    }
-
-    logger.info('Pet images uploaded successfully', {
-      petId,
-      userId,
-      imageCount: req.cloudinaryResults.length,
-      newImages: newImages.map(img => ({ id: img.id, url: img.imageUrl })),
-      requestId
-    });
-
-    res.status(200).json({
-      success: true,
-      message: `${req.cloudinaryResults.length} image(s) uploaded successfully`,
-      data: {
-        images: newImages
-      },
-      requestId
-    });
-
-  } catch (error) {
-    logger.error('Upload pet images error:', { 
-      error: error.message, 
-      stack: error.stack,
-      petId, 
-      userId, 
-      requestId 
-    });
-
-    // Cleanup uploaded images on error
-    if (req.cloudinaryResults && req.cloudinaryResults.length > 0) {
-      try {
-        const { cloudinaryUtils } = require('../config/cloudinary');
-        const publicIds = req.cloudinaryResults.map(r => r.public_id);
-        await cloudinaryUtils.deleteMultipleImages(publicIds);
-        logger.info('Cleaned up uploaded images after error');
-      } catch (cleanupError) {
-        logger.warn('Failed to cleanup images after error:', cleanupError);
-      }
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upload images',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      requestId
-    });
-  }
-},
-
-
-  // Delete pet image
   deletePetImage: async (req, res) => {
     const requestId = req.requestId;
     const userId = req.user.userId;
     const { petId, imageId } = req.params;
-
     try {
-      // Check if pet belongs to user
-      const existingPet = await db
-        .select()
-        .from(pets)
-        .where(and(
-          eq(pets.id, petId),
-          eq(pets.ownerId, userId)
-        ))
-        .limit(1);
-
-      if (existingPet.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Pet not found or you do not have permission',
-          requestId
-        });
+      const result = await petService.deletePetImage(petId, userId, imageId);
+      if (result === null) {
+        return res.status(404).json({ success: false, message: 'Pet not found or you do not have permission', requestId });
       }
-
-      // Get image
-      const imageResult = await db
-        .select()
-        .from(petImages)
-        .where(and(
-          eq(petImages.id, imageId),
-          eq(petImages.petId, petId)
-        ))
-        .limit(1);
-
-      if (imageResult.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Image not found',
-          requestId
-        });
+      if (result === 'not_found') {
+        return res.status(404).json({ success: false, message: 'Image not found', requestId });
       }
-
-      const image = imageResult[0];
-
-      // Delete from Cloudinary
-      try {
-        if (image.cloudinaryPublicId) {
-          await cloudinaryUtils.deleteImage(image.cloudinaryPublicId);
-        }
-      } catch (deleteError) {
-        logger.warn('Failed to delete image from Cloudinary:', deleteError.message);
-      }
-
-      // Delete from database
-      await db
-        .delete(petImages)
-        .where(eq(petImages.id, imageId));
-
-      // If deleted image was primary, set first remaining image as primary
-      if (image.isPrimary) {
-        const remainingImages = await db
-          .select()
-          .from(petImages)
-          .where(eq(petImages.petId, petId))
-          .orderBy(asc(petImages.sortOrder))
-          .limit(1);
-
-        if (remainingImages.length > 0) {
-          await db
-            .update(petImages)
-            .set({ isPrimary: true })
-            .where(eq(petImages.id, remainingImages[0].id));
-
-          await db
-            .update(pets)
-            .set({ 
-              primaryImage: remainingImages[0].imageUrl,
-              updatedAt: new Date()
-            })
-            .where(eq(pets.id, petId));
-        } else {
-          // No images left, remove primary image
-          await db
-            .update(pets)
-            .set({ 
-              primaryImage: null,
-              updatedAt: new Date()
-            })
-            .where(eq(pets.id, petId));
-        }
-      }
-
       logger.info('Pet image deleted successfully', { petId, imageId, userId, requestId });
-
-      res.status(200).json({
-        success: true,
-        message: 'Image deleted successfully',
-        requestId
-      });
-
+      res.status(200).json({ success: true, message: 'Image deleted successfully', requestId });
     } catch (error) {
-      logger.error('Delete pet image error:', { error: error.message, petId, imageId, requestId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to delete image',
-        requestId
-      });
+      logger.error('Delete pet image error', { err: error, petId, imageId, requestId });
+      res.status(500).json({ success: false, message: 'Failed to delete image', requestId });
     }
   },
-  // Pet matching algorithm — score pets against adopter's lifestyle quiz answers
+
   matchPets: async (req, res) => {
     const requestId = req.requestId;
     try {
-      const {
-        livingSpace,       // 'apartment' | 'house_small_yard' | 'house_large_yard'
-        activityLevel,     // 'low' | 'moderate' | 'high'
-        hasChildren,       // boolean
-        hasOtherPets,      // boolean
-        hasOtherDogs,      // boolean
-        hasOtherCats,      // boolean
-        experienceLevel,   // 'first_time' | 'some_experience' | 'experienced'
-        preferredSpecies,  // 'any' | 'dog' | 'cat' | 'bird' | 'rabbit' | 'other'
-        preferredSize,     // 'any' | 'small' | 'medium' | 'large'
-        preferredAge,      // 'any' | 'young' | 'adult' | 'senior'
-        city,
-        state
-      } = req.body;
-
-      // Build base query — only available, active, approved pets
-      const conditions = [
-        eq(pets.adoptionStatus, 'available'),
-        eq(pets.isActive, true),
-        eq(pets.moderationStatus, 'approved')
-      ];
-
-      if (preferredSpecies && preferredSpecies !== 'any') {
-        conditions.push(eq(pets.species, preferredSpecies));
-      }
-      if (city) conditions.push(eq(pets.city, city));
-      if (state) conditions.push(eq(pets.state, state));
-
-      const allPets = await db
-        .select({
-          id: pets.id, name: pets.name, species: pets.species, breed: pets.breed,
-          size: pets.size, age: pets.age, ageUnit: pets.ageUnit, gender: pets.gender,
-          energyLevel: pets.energyLevel, goodWithKids: pets.goodWithKids,
-          goodWithPets: pets.goodWithPets, goodWithDogs: pets.goodWithDogs,
-          goodWithCats: pets.goodWithCats, houseTrained: pets.houseTrained,
-          trainedLevel: pets.trainedLevel, specialNeeds: pets.specialNeeds,
-          adoptionFee: pets.adoptionFee, primaryImage: pets.primaryImage,
-          description: pets.description, city: pets.city, state: pets.state,
-          isVaccinated: pets.isVaccinated, isNeutered: pets.isNeutered,
-          isSpayed: pets.isSpayed, isUrgent: pets.isUrgent, slug: pets.slug,
-          createdAt: pets.createdAt
-        })
-        .from(pets)
-        .where(and(...conditions))
-        .orderBy(desc(pets.isUrgent), desc(pets.createdAt))
-        .limit(100);
-
-      // Scoring function (max ~100 points)
-      const scorePet = (pet) => {
-        let score = 0;
-
-        // Energy / activity level match (25 pts)
-        const energyMap = {
-          low: ['low'],
-          moderate: ['low', 'medium'],
-          high: ['medium', 'high']
-        };
-        if (activityLevel && pet.energyLevel && energyMap[activityLevel]?.includes(pet.energyLevel)) {
-          score += 25;
-        }
-
-        // Living space vs size (20 pts)
-        const sizeMap = {
-          apartment: ['small', 'medium'],
-          house_small_yard: ['small', 'medium', 'large'],
-          house_large_yard: ['small', 'medium', 'large', 'extra_large']
-        };
-        if (livingSpace && pet.size && sizeMap[livingSpace]?.includes(pet.size)) {
-          score += 20;
-        }
-        // Preferred size bonus (10 pts)
-        if (preferredSize && preferredSize !== 'any' && pet.size === preferredSize) {
-          score += 10;
-        }
-
-        // Children compatibility (15 pts)
-        if (hasChildren && pet.goodWithKids === true) score += 15;
-        if (!hasChildren) score += 5; // no penalty if no kids
-
-        // Other pets compatibility (15 pts)
-        if (hasOtherPets) {
-          if (pet.goodWithPets === true) score += 8;
-          if (hasOtherDogs && pet.goodWithDogs === true) score += 4;
-          if (hasOtherCats && pet.goodWithCats === true) score += 3;
-        } else {
-          score += 10; // bonus — pet doesn't need to be pet-friendly
-        }
-
-        // Experience level (10 pts)
-        const expMap = {
-          first_time: ['not_trained', 'basic'],
-          some_experience: ['basic', 'advanced'],
-          experienced: ['not_trained', 'basic', 'advanced']
-        };
-        if (experienceLevel && pet.trainedLevel && expMap[experienceLevel]?.includes(pet.trainedLevel)) {
-          score += 10;
-        }
-
-        // Preferred age bonus (5 pts)
-        if (preferredAge && preferredAge !== 'any' && pet.age !== null) {
-          const ageInMonths = pet.ageUnit === 'years' ? pet.age * 12 : pet.age;
-          const ageCategory = ageInMonths <= 12 ? 'young' : ageInMonths <= 84 ? 'adult' : 'senior';
-          if (ageCategory === preferredAge) score += 5;
-        }
-
-        // House trained bonus (5 pts)
-        if (pet.houseTrained) score += 5;
-
-        // Urgent pets get a small boost to help them find homes
-        if (pet.isUrgent) score += 3;
-
-        return score;
-      };
-
-      const scoredPets = allPets
-        .map(pet => ({ ...pet, matchScore: scorePet(pet) }))
-        .filter(p => p.matchScore > 10)
-        .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 20);
-
+      const matches = await petService.matchPets(req.body);
       res.status(200).json({
         success: true,
         data: {
-          matches: scoredPets,
-          totalMatches: scoredPets.length,
-          criteria: { livingSpace, activityLevel, preferredSpecies, preferredSize }
+          matches,
+          totalMatches: matches.length,
+          criteria: {
+            livingSpace: req.body.livingSpace,
+            activityLevel: req.body.activityLevel,
+            preferredSpecies: req.body.preferredSpecies,
+            preferredSize: req.body.preferredSize,
+          },
         },
-        requestId
+        requestId,
       });
     } catch (error) {
-      logger.error('Pet matching error:', { error: error.message, requestId });
+      logger.error('Pet matching error', { err: error, requestId });
       res.status(500).json({ success: false, message: 'Matching failed. Please try again.', requestId });
     }
   },
