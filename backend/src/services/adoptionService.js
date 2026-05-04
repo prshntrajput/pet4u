@@ -88,7 +88,7 @@ const adoptionService = {
     const [notification] = await db.insert(notifications).values({
       id: createId(), userId: pet.ownerId, type: 'adoption_request',
       title: 'New Adoption Request', message: `Someone is interested in adopting ${pet.name}`,
-      relatedId: newId, relatedType: 'adoption_request', actionUrl: `/adoption-requests/${newId}`,
+      relatedId: newId, relatedType: 'adoption_request', actionUrl: '/adoption-requests',
     }).returning();
 
     try { emitToUser(pet.ownerId, 'notification:new', { notification }); }
@@ -212,7 +212,7 @@ const adoptionService = {
       message: status === 'approved'
         ? 'Your adoption request has been approved! Check the details for next steps.'
         : 'Your adoption request has been reviewed.',
-      relatedId: requestIdParam, relatedType: 'adoption_request', actionUrl: `/my-requests/${requestIdParam}`,
+      relatedId: requestIdParam, relatedType: 'adoption_request', actionUrl: '/my-requests',
     }).returning();
 
     try { emitToUser(request.adopterId, 'notification:new', { notification }); }

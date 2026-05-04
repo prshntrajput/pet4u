@@ -11,12 +11,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Loader2, Mail, Phone, MapPin, CheckCircle, XCircle, Calendar, Sparkles, Inbox } from 'lucide-react';
+import { Loader2, Mail, Phone, MapPin, CheckCircle, XCircle, Calendar, Sparkles, Inbox, Heart } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { petAPI } from '@/lib/api/pets';
 
 export default function ReceivedRequestsPage() {
   const dispatch = useDispatch();
@@ -29,6 +30,8 @@ export default function ReceivedRequestsPage() {
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingLocation, setMeetingLocation] = useState('');
   const [meetingNotes, setMeetingNotes] = useState('');
+  const [confirmingRequest, setConfirmingRequest] = useState(null);
+  const [isConfirmingAdoption, setIsConfirmingAdoption] = useState(false);
 
   useEffect(() => {
     dispatch(fetchReceivedRequests({ status: activeTab }));
@@ -73,6 +76,21 @@ export default function ReceivedRequestsPage() {
       dispatch(fetchReceivedRequests({ status: activeTab }));
     } catch (error) {
       toast.error(error || 'Failed to respond to request');
+    }
+  };
+
+  const handleConfirmAdoption = async () => {
+    if (!confirmingRequest) return;
+    setIsConfirmingAdoption(true);
+    try {
+      await petAPI.updatePet(confirmingRequest.pet.id, { adoptionStatus: 'adopted' });
+      toast.success(`${confirmingRequest.pet.name} marked as adopted`);
+      setConfirmingRequest(null);
+      dispatch(fetchReceivedRequests({ status: activeTab }));
+    } catch (error) {
+      toast.error('Failed to confirm adoption. Please try again.');
+    } finally {
+      setIsConfirmingAdoption(false);
     }
   };
 
@@ -290,6 +308,23 @@ export default function ReceivedRequestsPage() {
                                 Message
                               </Button>
                             </Link>
+                            {request.status === 'approved' && request.pet?.adoptionStatus !== 'adopted' && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => setConfirmingRequest(request)}
+                                className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+                              >
+                                <Heart className="h-3.5 w-3.5 mr-1.5" />
+                                Confirm Adoption
+                              </Button>
+                            )}
+                            {request.status === 'approved' && request.pet?.adoptionStatus === 'adopted' && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                Adopted
+                              </span>
+                            )}
                             {request.status === 'pending' && (
                               <>
                                 <Button
@@ -323,6 +358,44 @@ export default function ReceivedRequestsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Confirm Adoption Dialog */}
+      <Dialog open={!!confirmingRequest} onOpenChange={(open) => { if (!open) setConfirmingRequest(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Adoption</DialogTitle>
+            <DialogDescription>
+              Has <strong>{confirmingRequest?.adopter?.name}</strong> completed the adoption of <strong>{confirmingRequest?.pet?.name}</strong>? This will mark the pet as adopted and remove it from available listings.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmingRequest(null)}
+              disabled={isConfirmingAdoption}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAdoption}
+              disabled={isConfirmingAdoption}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isConfirmingAdoption ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Confirming...
+                </>
+              ) : (
+                <>
+                  <Heart className="mr-2 h-4 w-4" />
+                  Yes, Confirm Adoption
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Response Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

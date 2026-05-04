@@ -48,6 +48,13 @@ export default function NotificationDropdown() {
     dispatch(fetchNotifications({ limit: 10, unreadOnly: false }));
   };
 
+  const resolveNotificationUrl = (url, type) => {
+    if (!url) return null;
+    if (/^\/adoption-requests\/[^/]+/.test(url)) return '/adoption-requests';
+    if (/^\/my-requests\/[^/]+/.test(url)) return '/my-requests';
+    return url;
+  };
+
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
       try {
@@ -57,8 +64,9 @@ export default function NotificationDropdown() {
       }
     }
 
-    if (notification.actionUrl) {
-      router.push(notification.actionUrl);
+    const url = resolveNotificationUrl(notification.actionUrl, notification.type);
+    if (url) {
+      router.push(url);
     }
 
     setIsOpen(false);
