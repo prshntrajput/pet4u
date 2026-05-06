@@ -101,6 +101,7 @@ const initialState = {
     size: '',
     city: '',
     state: '',
+    listingType: '',
     sortBy: 'createdAt',
     order: 'desc',
   },

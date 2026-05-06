@@ -5,6 +5,7 @@ const { pets, petImages, users } = require('../models');
 const { logger } = require('../config/logger');
 const { eq, and, or, sql, like, gte, lte, desc, asc } = require('drizzle-orm');
 const { cloudinaryUtils } = require('../config/cloudinary');
+const savedSearchService = require('./savedSearchService');
 
 async function verifyPetOwnership(petId, userId) {
   const result = await db
@@ -67,6 +68,7 @@ const petService = {
         trainedLevel: petData.trainedLevel || null,
         houseTrained: petData.houseTrained || false,
         adoptionStatus: 'available',
+        listingType: petData.listingType || 'adopt',
         adoptionFee: petData.adoptionFee ? String(petData.adoptionFee) : '0',
         isUrgent: petData.isUrgent || false,
         urgentReason: petData.urgentReason || null,
@@ -86,6 +88,9 @@ const petService = {
       })
       .returning();
 
+    // Fire-and-forget alert notifications for matching saved searches
+    savedSearchService.notifyMatchingUsers(newPet[0]);
+
     return newPet[0];
   },
 
@@ -93,7 +98,7 @@ const petService = {
     const {
       page = 1, limit = 12, search, species, gender, size, city, state,
       minAge, maxAge, goodWithKids, goodWithPets, isVaccinated, isNeutered,
-      energyLevel, adoptionStatus = 'available', ownerId,
+      energyLevel, adoptionStatus = 'available', ownerId, listingType,
       sortBy = 'createdAt', order = 'desc'
     } = filters;
 
@@ -106,6 +111,7 @@ const petService = {
 
     if (adoptionStatus)       conditions.push(eq(pets.adoptionStatus, adoptionStatus));
     if (ownerId)              conditions.push(eq(pets.ownerId, ownerId));
+    if (listingType)          conditions.push(eq(pets.listingType, listingType));
     if (species)              conditions.push(eq(pets.species, species));
     if (gender)               conditions.push(eq(pets.gender, gender));
     if (size)                 conditions.push(eq(pets.size, size));
@@ -134,7 +140,8 @@ const petService = {
         id: pets.id, name: pets.name, species: pets.species, breed: pets.breed,
         age: pets.age, ageUnit: pets.ageUnit, gender: pets.gender, size: pets.size,
         city: pets.city, state: pets.state, primaryImage: pets.primaryImage,
-        adoptionStatus: pets.adoptionStatus, adoptionFee: pets.adoptionFee,
+        adoptionStatus: pets.adoptionStatus, listingType: pets.listingType,
+        adoptionFee: pets.adoptionFee,
         isUrgent: pets.isUrgent, description: pets.description, slug: pets.slug,
         viewCount: pets.viewCount, favoriteCount: pets.favoriteCount,
         createdAt: pets.createdAt, ownerId: pets.ownerId,

@@ -184,6 +184,8 @@ const setupRoutes = () => {
   const analyticsRoutes = require('./src/routes/analytics');
   const lostFoundRoutes = require('./src/routes/lostFound');
   const appointmentRoutes = require('./src/routes/appointments');
+  const savedSearchRoutes = require('./src/routes/savedSearches');
+  const checkInRoutes = require('./src/routes/checkIns');
 
   // Apply strict rate limiting to auth routes
   app.use(`${apiV1}/auth/login`, securityMiddleware.authLimiter);
@@ -207,6 +209,8 @@ const setupRoutes = () => {
   app.use(`${apiV1}/analytics`, analyticsRoutes);
   app.use(`${apiV1}/lost-found`, lostFoundRoutes);
   app.use(`${apiV1}/appointments`, appointmentRoutes);
+  app.use(`${apiV1}/alerts`, savedSearchRoutes);
+  app.use(`${apiV1}/check-ins`, checkInRoutes);
 
   logger.info('✅ API routes configured');
 };

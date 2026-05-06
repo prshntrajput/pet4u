@@ -36,6 +36,7 @@ import {
   PawPrint,
   Lock,
   Calendar,
+  Stethoscope,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
@@ -322,12 +323,20 @@ export default function PetDetailPage() {
               <p className="text-muted-foreground text-sm mt-0.5">
                 {pet.breed || (pet.species ? pet.species.charAt(0).toUpperCase() + pet.species.slice(1) : 'Pet')}
               </p>
-              <Badge
-                variant={pet.adoptionStatus === 'available' ? 'default' : 'secondary'}
-                className="mt-2 capitalize"
-              >
-                {pet.adoptionStatus || 'Unknown'}
-              </Badge>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <Badge
+                  variant={pet.adoptionStatus === 'available' ? 'default' : 'secondary'}
+                  className="capitalize"
+                >
+                  {pet.adoptionStatus || 'Unknown'}
+                </Badge>
+                {pet.listingType === 'foster' && (
+                  <Badge className="bg-violet-500 hover:bg-violet-600 text-white">Foster</Badge>
+                )}
+                {pet.listingType === 'both' && (
+                  <Badge className="bg-violet-400 hover:bg-violet-500 text-white">Adopt or Foster</Badge>
+                )}
+              </div>
             </div>
 
             {/* Stats grid */}
@@ -476,6 +485,35 @@ export default function PetDetailPage() {
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Special Needs</p>
                   <p className="text-sm text-foreground">{pet.specialNeeds}</p>
+                </div>
+              )}
+
+              {/* Vet Records */}
+              {Array.isArray(pet.vetRecords) && pet.vetRecords.length > 0 && (
+                <div className="pt-1 border-t border-border">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <Stethoscope className="h-3.5 w-3.5" /> Health Records
+                  </p>
+                  <div className="space-y-2">
+                    {pet.vetRecords.map((rec, i) => (
+                      <div key={rec.id || i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm font-medium">{rec.name}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary capitalize font-medium">
+                              {rec.type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {rec.date}{rec.vet ? ` · ${rec.vet}` : ''}
+                          </p>
+                          {rec.notes && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{rec.notes}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>

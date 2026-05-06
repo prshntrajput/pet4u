@@ -50,6 +50,7 @@ const pets = pgTable('pets', {
   
   // Adoption information
   adoptionStatus: varchar('adoption_status', { length: 20 }).default('available'), // 'available', 'pending', 'adopted'
+  listingType: varchar('listing_type', { length: 20 }).default('adopt'), // 'adopt', 'foster', 'both'
   adoptionFee: decimal('adoption_fee', { precision: 10, scale: 2 }).default('0'),
   isUrgent: boolean('is_urgent').default(false),
   urgentReason: text('urgent_reason'),

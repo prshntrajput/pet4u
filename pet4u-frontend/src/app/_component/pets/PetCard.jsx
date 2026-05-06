@@ -110,6 +110,16 @@ export default function PetCard({ pet, showFavoriteButton = true }) {
                   Urgent
                 </span>
               )}
+              {pet.listingType === 'foster' && (
+                <span className="px-2 py-0.5 bg-violet-500 rounded-full text-[10px] font-bold text-white shadow">
+                  Foster
+                </span>
+              )}
+              {pet.listingType === 'both' && (
+                <span className="px-2 py-0.5 bg-violet-400 rounded-full text-[10px] font-bold text-white shadow">
+                  Adopt/Foster
+                </span>
+              )}
               {pet.adoptionStatus !== 'available' && (
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize shadow ${statusColor[pet.adoptionStatus] || 'bg-white/90 text-gray-600'}`}>
                   {pet.adoptionStatus}

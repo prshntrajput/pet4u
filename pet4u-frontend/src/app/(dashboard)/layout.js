@@ -24,7 +24,9 @@ import {
   X,
   AlertTriangle,
   Calendar,
-  Sparkles
+  Sparkles,
+  Bell,
+  ClipboardCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -193,6 +195,22 @@ export default function DashboardLayout({ children }) {
                       </Link>
                     </DropdownMenuItem>
                   )}
+                  {user?.role === 'adopter' && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/alerts" className="cursor-pointer">
+                          <Bell className="mr-2 h-4 w-4" />
+                          Pet Alerts
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/check-ins" className="cursor-pointer">
+                          <ClipboardCheck className="mr-2 h-4 w-4" />
+                          Check-ins
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/lost-found" className="cursor-pointer">
                       <AlertTriangle className="mr-2 h-4 w-4" />
@@ -277,6 +295,27 @@ export default function DashboardLayout({ children }) {
                   >
                     <TrendingUp size={20} />
                     <span className="font-medium">Analytics</span>
+                  </Link>
+                </>
+              )}
+
+              {user?.role === 'adopter' && (
+                <>
+                  <Link
+                    href="/alerts"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent"
+                  >
+                    <Bell size={20} />
+                    <span className="font-medium">Pet Alerts</span>
+                  </Link>
+                  <Link
+                    href="/check-ins"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent"
+                  >
+                    <ClipboardCheck size={20} />
+                    <span className="font-medium">Check-ins</span>
                   </Link>
                 </>
               )}

@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { petAPI } from '@/lib/api/pets';
+import { checkInsAPI } from '@/lib/api/checkIns';
 
 export default function ReceivedRequestsPage() {
   const dispatch = useDispatch();
@@ -83,8 +84,8 @@ export default function ReceivedRequestsPage() {
     if (!confirmingRequest) return;
     setIsConfirmingAdoption(true);
     try {
-      await petAPI.updatePet(confirmingRequest.pet.id, { adoptionStatus: 'adopted' });
-      toast.success(`${confirmingRequest.pet.name} marked as adopted`);
+      await checkInsAPI.markAdoptionComplete(confirmingRequest.id);
+      toast.success(`${confirmingRequest.pet.name} marked as adopted. Check-in reminders scheduled.`);
       setConfirmingRequest(null);
       dispatch(fetchReceivedRequests({ status: activeTab }));
     } catch (error) {

@@ -5,6 +5,8 @@ const reviewModels = require('./reviews');
 const paymentModels = require('./payment');
 const lostFoundModels = require('./lostFoundReports');
 const appointmentModels = require('./appointments');
+const savedSearchModels = require('./savedSearches');
+const checkInModels = require('./adoptionCheckIns');
 
 module.exports = {
   // User models
@@ -42,4 +44,10 @@ module.exports = {
   // Appointments
   appointments: appointmentModels.appointments,
   availabilitySlots: appointmentModels.availabilitySlots,
+
+  // Saved searches / pet alerts
+  savedSearches: savedSearchModels.savedSearches,
+
+  // Post-adoption check-ins
+  adoptionCheckIns: checkInModels.adoptionCheckIns,
 };

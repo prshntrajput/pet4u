@@ -20,7 +20,10 @@ const adoptionRequests = pgTable('adoption_requests', {
   
   // Request details
   message: text('message').notNull(),
-  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending', 'approved', 'rejected', 'withdrawn'
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending', 'approved', 'rejected', 'withdrawn', 'completed'
+  requestType: varchar('request_type', { length: 20 }).default('adopt'), // 'adopt', 'foster'
+  fosterDurationWeeks: integer('foster_duration_weeks'),
+  fosterNotes: text('foster_notes'),
   
   // Response from shelter
   responseMessage: text('response_message'),

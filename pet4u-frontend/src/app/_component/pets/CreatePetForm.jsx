@@ -61,6 +61,7 @@ export default function CreatePetForm() {
       energyLevel: 'medium',
       trainedLevel: 'not_trained',
       houseTrained: false,
+      listingType: 'adopt',
       isUrgent: false,
       urgentReason: '',
       city: user?.city || '',
@@ -499,6 +500,16 @@ export default function CreatePetForm() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="listingType" className="text-sm font-semibold">Listing Type</Label>
+            <select id="listingType" {...register('listingType')} className="w-full h-10 border-2 rounded-md px-3 text-sm bg-background">
+              <option value="adopt">Adopt Only</option>
+              <option value="foster">Foster Only</option>
+              <option value="both">Adopt or Foster</option>
+            </select>
+            <p className="text-xs text-muted-foreground">Choose whether this pet is available for adoption, fostering, or both.</p>
+          </div>
+
           <div className="flex items-center space-x-2">
             <Checkbox id="isUrgent" {...register('isUrgent')} />
             <Label htmlFor="isUrgent" className="text-sm font-normal cursor-pointer">

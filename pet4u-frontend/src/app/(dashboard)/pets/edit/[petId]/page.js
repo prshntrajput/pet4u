@@ -13,8 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Loader2, Save, Upload, Info, Heart, Activity, FileText,
-  MapPin, Image as ImageIcon, X, ArrowLeft,
+  Loader2, Save, Info, Heart, Activity, FileText,
+  MapPin, Image as ImageIcon, X, ArrowLeft, Plus, Stethoscope, Trash2,
 } from 'lucide-react';
 
 const SELECT_CLS =
@@ -35,6 +35,11 @@ export default function EditPetPage() {
   const [existingImages, setExistingImages] = useState([]);
   const [deletingImageId, setDeletingImageId] = useState(null);
 
+  // Vet records
+  const [vetRecords, setVetRecords] = useState([]);
+  const [showAddRecord, setShowAddRecord] = useState(false);
+  const [newRecord, setNewRecord] = useState({ date: '', type: 'vaccination', name: '', vet: '', notes: '' });
+
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm();
 
   const watchIsUrgent = watch('isUrgent');
@@ -51,6 +56,7 @@ export default function EditPetPage() {
       if (!p) throw new Error('Pet not found');
       setPet(p);
       setExistingImages(p.images || []);
+      setVetRecords(Array.isArray(p.vetRecords) ? p.vetRecords : []);
       reset({
         name: p.name || '',
         species: p.species || 'dog',
@@ -84,6 +90,7 @@ export default function EditPetPage() {
         description: p.description || '',
         story: p.story || '',
         adoptionStatus: p.adoptionStatus || 'available',
+        listingType: p.listingType || 'adopt',
       });
     } catch {
       toast.error('Failed to load pet details');
@@ -92,6 +99,18 @@ export default function EditPetPage() {
       setIsLoadingPet(false);
     }
   };
+
+  const addVetRecord = () => {
+    if (!newRecord.date || !newRecord.name.trim()) {
+      toast.error('Date and record name are required');
+      return;
+    }
+    setVetRecords((prev) => [...prev, { ...newRecord, id: `rec_${Date.now()}` }]);
+    setNewRecord({ date: '', type: 'vaccination', name: '', vet: '', notes: '' });
+    setShowAddRecord(false);
+  };
+
+  const removeVetRecord = (id) => setVetRecords((prev) => prev.filter((r) => r.id !== id));
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files || []);
@@ -129,6 +148,7 @@ export default function EditPetPage() {
         ...data,
         age: data.age ? parseInt(data.age) : undefined,
         weight: data.weight ? parseFloat(data.weight) : undefined,
+        vetRecords,
       };
       await petAPI.updatePet(petId, payload);
 
@@ -407,6 +427,16 @@ export default function EditPetPage() {
               </select>
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="listingType">Listing Type</Label>
+              <select id="listingType" {...register('listingType')} className={SELECT_CLS}>
+                <option value="adopt">Adopt Only</option>
+                <option value="foster">Foster Only</option>
+                <option value="both">Adopt or Foster</option>
+              </select>
+              <p className="text-xs text-muted-foreground">Choose whether this pet is available for adoption, fostering, or both.</p>
+            </div>
+
             <div className="flex items-center gap-2">
               <Checkbox id="isUrgent" checked={watch('isUrgent')}
                 onCheckedChange={(v) => setValue('isUrgent', v)} />
@@ -431,6 +461,97 @@ export default function EditPetPage() {
                 <Input id="state" {...register('state')} />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Vet Records */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-primary/10"><Stethoscope className="h-4 w-4 text-primary" /></div>
+                <CardTitle className="text-base">Health Records</CardTitle>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={() => setShowAddRecord((v) => !v)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Record
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Add record inline form */}
+            {showAddRecord && (
+              <div className="border border-border rounded-xl p-4 space-y-3 bg-muted/30">
+                <p className="text-sm font-semibold">New Health Record</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Date <span className="text-destructive">*</span></Label>
+                    <Input type="date" value={newRecord.date}
+                      onChange={(e) => setNewRecord((r) => ({ ...r, date: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Type</Label>
+                    <select value={newRecord.type}
+                      onChange={(e) => setNewRecord((r) => ({ ...r, type: e.target.value }))}
+                      className={SELECT_CLS}>
+                      <option value="vaccination">Vaccination</option>
+                      <option value="checkup">Checkup</option>
+                      <option value="treatment">Treatment</option>
+                      <option value="surgery">Surgery</option>
+                      <option value="dental">Dental</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Name / Vaccine <span className="text-destructive">*</span></Label>
+                    <Input placeholder="e.g., Rabies vaccine" value={newRecord.name}
+                      onChange={(e) => setNewRecord((r) => ({ ...r, name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Vet / Clinic</Label>
+                    <Input placeholder="e.g., Dr. Sharma" value={newRecord.vet}
+                      onChange={(e) => setNewRecord((r) => ({ ...r, vet: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs">Notes</Label>
+                    <Input placeholder="Any additional notes" value={newRecord.notes}
+                      onChange={(e) => setNewRecord((r) => ({ ...r, notes: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowAddRecord(false)}>Cancel</Button>
+                  <Button type="button" size="sm" onClick={addVetRecord}>Save Record</Button>
+                </div>
+              </div>
+            )}
+
+            {/* Records list */}
+            {vetRecords.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No health records added yet. Click "Add Record" to start.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {vetRecords.map((rec) => (
+                  <div key={rec.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-border bg-card">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">{rec.name}</span>
+                        <Badge variant="secondary" className="text-[10px] capitalize">{rec.type}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {rec.date}{rec.vet ? ` · ${rec.vet}` : ''}
+                      </p>
+                      {rec.notes && <p className="text-xs text-muted-foreground mt-0.5">{rec.notes}</p>}
+                    </div>
+                    <Button type="button" variant="ghost" size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
+                      onClick={() => removeVetRecord(rec.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

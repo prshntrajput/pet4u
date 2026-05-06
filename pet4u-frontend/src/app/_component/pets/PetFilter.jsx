@@ -46,6 +46,7 @@ export default function PetFilter({ onApplyFilters, isInSheet = false }) {
       size: '',
       city: '',
       state: '',
+      listingType: '',
       sortBy: 'createdAt',
       order: 'desc',
     };
@@ -160,6 +161,25 @@ export default function PetFilter({ onApplyFilters, isInSheet = false }) {
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="large">Large</SelectItem>
                 <SelectItem value="extra_large">Extra Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Listing Type */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Listing Type</Label>
+            <Select
+              value={localFilters.listingType || 'all'}
+              onValueChange={(value) => handleChange('listingType', value)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="adopt">Adopt Only</SelectItem>
+                <SelectItem value="foster">Foster Only</SelectItem>
+                <SelectItem value="both">Adopt or Foster</SelectItem>
               </SelectContent>
             </Select>
           </div>
