@@ -28,6 +28,26 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+export const loginDemoUser = createAsyncThunk(
+  'auth/loginDemoUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiWrapper.post('/auth/demo');
+
+      if (response.success) {
+        const { accessToken, refreshToken, user } = response.data.data;
+        tokenManager.setTokens(accessToken, refreshToken);
+
+        return { user, accessToken, isAuthenticated: true };
+      }
+
+      return rejectWithValue(response.error);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (userData, { rejectWithValue }) => {
@@ -147,6 +167,20 @@ const authSlice = createSlice({
         state.user = null;
         state.loginAttempts += 1;
         state.lastLoginAttempt = Date.now();
+      })
+      .addCase(loginDemoUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginDemoUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = action.payload.isAuthenticated;
+        state.error = null;
+      })
+      .addCase(loginDemoUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       })
       
       // Register cases

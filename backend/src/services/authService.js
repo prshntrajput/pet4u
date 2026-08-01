@@ -15,6 +15,16 @@ const USER_PUBLIC_FIELDS = {
   profileComplete: users.profileComplete, createdAt: users.createdAt, lastLoginAt: users.lastLoginAt,
 };
 
+const DEMO_USER = {
+  id: 'demo-user',
+  email: 'demo@pet4u.local',
+  name: 'Demo User',
+  role: 'demo',
+  isVerified: true,
+  isActive: true,
+  isDemo: true,
+};
+
 async function findActiveUserByEmail(email) {
   const result = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
   return result[0] || null;
@@ -27,6 +37,22 @@ async function findActiveUserById(userId) {
 }
 
 const authService = {
+  createDemoSession: () => {
+    const tokenPayload = {
+      userId: DEMO_USER.id,
+      email: DEMO_USER.email,
+      role: DEMO_USER.role,
+      isVerified: true,
+      isDemo: true,
+    };
+
+    return {
+      user: DEMO_USER,
+      accessToken: jwtUtils.generateAccessToken(tokenPayload),
+      refreshToken: jwtUtils.generateRefreshToken(tokenPayload),
+    };
+  },
+
   register: async ({ email, password, name, role, phone }) => {
     const existing = await findActiveUserByEmail(email);
     if (existing) throw Object.assign(new Error('User already exists with this email address'), { statusCode: 400 });
@@ -96,6 +122,10 @@ const authService = {
 
     const decoded = jwtUtils.verifyRefreshToken(refreshToken);
     if (!decoded) throw Object.assign(new Error('Invalid or expired refresh token'), { statusCode: 401 });
+
+    if (decoded.isDemo) {
+      return authService.createDemoSession();
+    }
 
     const tokenSuffix  = refreshToken.slice(-10);
     const storedToken  = await jwtUtils.getRefreshToken(decoded.userId, tokenSuffix);
@@ -180,7 +210,7 @@ const authService = {
     await jwtUtils.removeAllRefreshTokens(record.userId);
   },
 
-  getUserById: findActiveUserById,
+  getUserById: (userId) => userId === DEMO_USER.id ? DEMO_USER : findActiveUserById(userId),
 };
 
 module.exports = authService;

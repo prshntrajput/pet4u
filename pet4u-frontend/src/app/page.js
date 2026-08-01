@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Search, Shield, Calendar, Sparkles } from 'lucide-react';
 import PetCard from '@/app/_component/pets/PetCard';
 import { petAPI } from '@/lib/api/pets';
+import DemoLoginButton from '@/app/_component/auth/DemoLoginButton';
 
 export default function HomePage() {
   const [featuredPets, setFeaturedPets] = useState([]);
@@ -70,6 +71,7 @@ export default function HomePage() {
                 Browse pets
               </Button>
             </Link>
+            <DemoLoginButton size="lg" className="h-11 px-7 text-sm" />
           </div>
         </div>
       </section>

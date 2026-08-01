@@ -27,6 +27,9 @@ router.post('/login',
   authController.login
 );
 
+// Read-only demo session
+router.post('/demo', authController.demo);
+
 // Token refresh route
 router.post('/refresh', 
   authController.refresh

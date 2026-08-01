@@ -39,6 +39,14 @@ const authenticateToken = async (req, res, next) => {
 
     // Attach user info to request
     req.user = decoded;
+
+    if (decoded.isDemo && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Demo mode is read-only',
+        requestId
+      });
+    }
     
     logger.debug('User authenticated', {
       userId: decoded.userId,
@@ -98,7 +106,7 @@ const requireRole = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!req.user.isDemo && !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions',

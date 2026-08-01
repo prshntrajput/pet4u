@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, UserPlus, Loader2, PawPrint, CheckCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import DemoLoginButton from './DemoLoginButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -351,6 +352,8 @@ export default function RegisterForm() {
       </CardContent>
 
       <CardFooter className="flex-col space-y-4">
+        <DemoLoginButton className="w-full" />
+
         <div className="relative w-full">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />

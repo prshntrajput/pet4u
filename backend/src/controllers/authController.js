@@ -35,6 +35,23 @@ const authController = {
     }
   },
 
+  demo: async (req, res) => {
+    const requestId = req.requestId;
+    try {
+      const result = authService.createDemoSession();
+      logger.info('Demo session started', { requestId });
+      res.status(200).json({
+        success: true,
+        message: 'Demo session started',
+        data: { ...result, expiresIn: 15 * 60 },
+        requestId,
+      });
+    } catch (error) {
+      logger.error('Demo session error', { err: error, requestId });
+      res.status(500).json({ success: false, message: 'Unable to start demo mode', requestId });
+    }
+  },
+
   refresh: async (req, res) => {
     const requestId = req.requestId;
     logger.info('Token refresh attempt', { requestId });
